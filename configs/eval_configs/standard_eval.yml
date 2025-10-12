@@ -1,0 +1,10 @@
+n_trials: 1000
+metrics:
+  - mean_absolute_error
+  - mean_squared_error
+  - r2_score
+  - mean_absolute_percentage_error
+preferences:
+  mean_absolute_error: 1.0
+  mean_squared_error: 1.0
+  r2_score: 0.5
