@@ -1,0 +1,21 @@
+hyperparameters:
+- name: n_restarts_optimizer 
+  default_value: 0
+  type: uniform_int
+  lower: 0
+  upper: 10
+- name: normalize_y
+  default_value: true
+  type: categorical
+  choices:
+    - true
+    - false
+- name: kernel
+  default_value: DotProduct
+  type: categorical
+  choices:
+    - DotProduct+RBF
+    - DotProduct
+    - RBF
+    - Matern
+    - WhiteKernel

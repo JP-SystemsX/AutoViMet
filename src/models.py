@@ -2,6 +2,12 @@ from abc import ABC, abstractmethod
 from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.cross_decomposition import PLSRegression
+from sklearn.datasets import make_friedman2
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel
+from sklearn.gaussian_process.kernels import RBF
+from sklearn.gaussian_process.kernels import Matern
+
 
 class BaseModel(ABC):
     def __init__(self, **kwargs):
@@ -52,3 +58,25 @@ class PartialLeastSquares(BaseModel):
     
     def predict(self, X):
         return self.model.predict(X)
+    
+
+class GaussianProcess(BaseModel):
+    def __init__(self, kernel, **kwargs):
+        match kernel:
+            case "DotProduct+RBF":
+                kernel = DotProduct() + RBF() + WhiteKernel()
+            case "DotProduct":
+                kernel = DotProduct() + WhiteKernel()
+            case "RBF":
+                kernel = RBF() + WhiteKernel()
+            case "Matern":
+                kernel = Matern() + WhiteKernel()
+            case "WhiteKernel":
+                kernel = WhiteKernel()
+        self.model = GaussianProcessRegressor(kernel=kernel, **kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X, return_std=False)
