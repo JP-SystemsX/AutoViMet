@@ -1,0 +1,26 @@
+hyperparameters:
+- name: kernel
+  default_value: 'rbf'
+  type: categorical
+  choices:
+    - 'linear'
+    - 'poly'
+    - 'rbf'
+    - 'sigmoid'
+- name: degree
+  default_value: 3
+  type: uniform_int
+  lower: 1
+  upper: 10
+- name: gamma
+  default_value: 'scale'
+  type: categorical
+  choices:
+    - 'scale'
+    - 'auto'
+- name: C
+  default_value: 1.0
+  type: uniform_float
+  lower: 0.01
+  upper: 20.0
+  log: true

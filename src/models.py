@@ -7,6 +7,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.gaussian_process.kernels import Matern
+from sklearn.svm import SVR
 
 
 class BaseModel(ABC):
@@ -76,7 +77,21 @@ class GaussianProcess(BaseModel):
         self.model = GaussianProcessRegressor(kernel=kernel, **kwargs)
     
     def train(self, X, y):
+        if len(X) > 1000:
+            X = X.sample(n=1000, random_state=42)
+            y = y.loc[X.index]
         self.model.fit(X, y)
     
     def predict(self, X):
         return self.model.predict(X, return_std=False)
+    
+
+class SupportVectorRegression(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = SVR(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
