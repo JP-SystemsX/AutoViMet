@@ -8,6 +8,7 @@ from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.gaussian_process.kernels import Matern
 from sklearn.svm import SVR
+from autogluon.tabular.models import XGBoostModel
 
 
 class BaseModel(ABC):
@@ -92,6 +93,18 @@ class SupportVectorRegression(BaseModel):
     
     def train(self, X, y):
         self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+    
+
+class XGBoost(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = XGBoostModel(hyperparameters=kwargs, problem_type="REGRESSION")
+    
+    def train(self, X, y):
+        self.model.fit(X=X, y=y)
+        self.model.
     
     def predict(self, X):
         return self.model.predict(X)
