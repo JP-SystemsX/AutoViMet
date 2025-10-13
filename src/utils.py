@@ -13,6 +13,7 @@ import subprocess
 import uuid
 from time import sleep
 from warnings import warn
+import numpy as np
 
 
 def get_configspace(path: str | Path) -> ConfigSpace.ConfigurationSpace:
@@ -61,7 +62,7 @@ def make_dict_storable(advanced_dictionary: dict)->dict:
     for key, value in advanced_dictionary.items():
         if isinstance(value, (int, float, str)):
             pass
-        elif isinstance(value, bool):
+        elif isinstance(value, (bool, np.bool)):
             value = 1 if value else 0
         elif isinstance(value, (bytes, Path, list, FeatureMetadata)) or value is None:
             value = str(value)
@@ -69,8 +70,6 @@ def make_dict_storable(advanced_dictionary: dict)->dict:
             value = value.strftime("%d-%m-%Y %H:%M:%S")
         elif isinstance(value, dict):
             value = json.dumps(make_dict_storable(value))
-        elif isinstance(value):
-            value = value.full_path
         #elif isinstance(value, str):
         else:
             raise NotImplementedError(f"dtype {type(value)} is currently not storable, but can likely be easily added in make_dict_storable()")

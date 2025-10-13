@@ -5,4 +5,4 @@ metrics:
   - r2_score
   - mean_absolute_percentage_error
 preferences:
-  r2_score: 1.0
+  r2_score: -1.0 # Higher is better

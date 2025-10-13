@@ -20,6 +20,7 @@ from collections import defaultdict
 import uuid
 import typer
 from typer_config import use_yaml_config
+from ConfigSpace import Configuration
 
 app = typer.Typer(pretty_exceptions_enable=False)
 
@@ -77,6 +78,7 @@ def main(
             "config": dict(config),
             "train_duration": train_duration,
             "inference_duration": inference_duration,
+            "timestamp": time.time(),
             **get_hardware_resources()
         }
         for metric_name, metric in metric_collection.items():
@@ -96,10 +98,14 @@ def main(
     results["preference_score"] = sum(results[metric] * weight for metric, weight in preferences.items())
     incumbent = results.sort_values("preference_score", ascending=True).iloc[0]
     best_config = yaml.safe_load(incumbent["config"])
+    # Type Cast back to original (e.g. we store bools as int two typecasts required to cast it back to original)
+    best_config = Configuration(cs, values=best_config)
+    best_config = Configuration(cs, vector=best_config._vector)
+    best_config = dict(best_config)
     print("Best Config found:", best_config)
 
 
-    # TODO Evaluate best Model (Time Series Cross Validation)
+    # Evaluate best Model (Time Series Cross Validation)
     data_loader = load_data(data_config_adr, id=data_id) 
     results = defaultdict(list)
     for X_train, y_train, X_test, y_test in data_loader:

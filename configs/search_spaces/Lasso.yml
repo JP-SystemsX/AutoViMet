@@ -22,5 +22,15 @@ hyperparameters:
   choices:
     - cyclic
     - random
-
-  
+- name: fit_intercept
+  default_value: true
+  type: categorical
+  choices:
+    - true
+    - false
+- name: positive
+  default_value: false
+  type: categorical
+  choices:
+    - true
+    - false
