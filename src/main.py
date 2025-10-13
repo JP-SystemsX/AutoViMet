@@ -75,8 +75,8 @@ def main(
             "data_config_hash": data_config_hash,
             "data_id": data_id,
             "config": dict(config),
-            "train_duration(s)": train_duration,
-            "inference_duration(ms/sample)": inference_duration,
+            "train_duration": train_duration,
+            "inference_duration": inference_duration,
             **get_hardware_resources()
         }
         for metric_name, metric in metric_collection.items():
@@ -95,7 +95,7 @@ def main(
     assert len(results) == n_trials, f"Expected {n_trials} results but got {len(results)}. Something went wrong during the evaluation."
     results["preference_score"] = sum(results[metric] * weight for metric, weight in preferences.items())
     incumbent = results.sort_values("preference_score", ascending=True).iloc[0]
-    best_config = yaml.safe_load(incumbent["config"].values[0])
+    best_config = yaml.safe_load(incumbent["config"])
     print("Best Config found:", best_config)
 
 
