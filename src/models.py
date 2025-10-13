@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
+from sklearn.cross_decomposition import PLSRegression
 
 class BaseModel(ABC):
     def __init__(self, **kwargs):
@@ -40,4 +41,14 @@ class PolynomialRegression(BaseModel):
     def predict(self, X):
         if self.degree > 1:
             X = self.poly.transform(X)
+        return self.model.predict(X)
+    
+class PartialLeastSquares(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = PLSRegression(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
         return self.model.predict(X)

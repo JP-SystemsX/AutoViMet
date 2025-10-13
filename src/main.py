@@ -21,6 +21,7 @@ import uuid
 import typer
 from typer_config import use_yaml_config
 from ConfigSpace import Configuration
+from copy import deepcopy
 
 app = typer.Typer(pretty_exceptions_enable=False)
 
@@ -47,18 +48,23 @@ def main(
     data_loader = load_data(data_config_adr, id=data_id) 
     X_train, y_train, _, _ = next(data_loader)
     validation_split = len(y_train) // 10
-    X_val, y_val = X_train[-validation_split:], y_train[-validation_split:]
-    X_train, y_train = X_train[:-validation_split], y_train[:-validation_split]
+    X_val_, y_val_ = X_train[-validation_split:], y_train[-validation_split:]
+    X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
 
     # preprocess dataset
     feature_generator = AutoMLPipelineFeatureGenerator()
-    X_train = feature_generator.fit_transform(X=X_train, y=y_train)
-    X_val = feature_generator.transform(X_val)
+    X_train_ = feature_generator.fit_transform(X=X_train_, y=y_train_)
+    X_val_ = feature_generator.transform(X_val_)
 
     # Optimize Model
     cs = get_configspace(search_space_adr)
     configs = cs.sample_configuration(n_trials) 
     for config in tqdm(configs):
+        X_train = deepcopy(X_train_)
+        y_train = deepcopy(y_train_)
+        X_val = deepcopy(X_val_)
+        y_val = deepcopy(y_val_)
+
         # Train Model
         model = getattr(models, model_name)(**dict(config))
 
