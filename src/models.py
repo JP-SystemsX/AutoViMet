@@ -11,6 +11,7 @@ from sklearn.svm import SVR
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 from catboost import CatBoostRegressor
+from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor
 
 
 class BaseModel(ABC):
@@ -131,3 +132,34 @@ class CatBoost(BaseModel):
     
     def predict(self, X):
         return self.model.predict(X)
+    
+
+class RandomForest(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = RandomForestRegressor(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X=X, y=y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+    
+class ExtraTrees(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = ExtraTreesRegressor(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X=X, y=y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+
+
+# TODO NN_TORCH
+# TODO FASTAI
+# TODO XT
+# TODO TabPFN
+# TODO LogisticRegression
+# TODO Mitra
+# TODO TabICL
+# TODO RealMLP
