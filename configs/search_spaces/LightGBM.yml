@@ -1,0 +1,35 @@
+hyperparameters:
+- name: objective 
+  default_value: "regression"
+  type: categorical
+  choices: 
+  - "regression"
+  - "regression_l1"
+  - "huber"
+  - "fair"
+  - "poisson"
+  - "quantile"
+  - "mape"
+  - "gamma"
+  - "tweedie"
+- name: learning_rate
+  default_value: 0.05
+  type: uniform_float
+  lower: 0.0001
+  upper: 0.3
+  log: true
+- name: feature_fraction
+  default_value: 1.0
+  type: uniform_float
+  lower: 0.75
+  upper: 1.0
+- name: min_data_in_leaf
+  default_value: 20
+  type: uniform_int
+  lower: 2
+  upper: 60
+- name: num_leaves
+  default_value: 31
+  type: uniform_int
+  lower: 16
+  upper: 96

@@ -8,7 +8,8 @@ from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.gaussian_process.kernels import Matern
 from sklearn.svm import SVR
-from autogluon.tabular.models import XGBoostModel
+from xgboost import XGBRegressor
+from lightgbm import LGBMRegressor
 
 
 class BaseModel(ABC):
@@ -100,11 +101,21 @@ class SupportVectorRegression(BaseModel):
 
 class XGBoost(BaseModel):
     def __init__(self, **kwargs):
-        self.model = XGBoostModel(hyperparameters=kwargs, problem_type="REGRESSION")
+        self.model = XGBRegressor(enable_categorical=True, **kwargs)
     
     def train(self, X, y):
         self.model.fit(X=X, y=y)
-        self.model.
+    
+    def predict(self, X):
+        return self.model.predict(X)
+    
+
+class LightGBM(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = LGBMRegressor(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X=X, y=y)
     
     def predict(self, X):
         return self.model.predict(X)
