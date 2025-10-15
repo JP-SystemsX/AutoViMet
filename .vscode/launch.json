@@ -12,10 +12,10 @@
             "program": "src/main.py",
             "console": "integratedTerminal",
             "args": [
-                "--model-name", "ExtraTrees",
+                "--model-name", "TabPFN",
                 "--eval-config-adr", "configs/eval_configs/standard_eval.yml",
                 "--data-config-adr", "configs/data_configs/ctr23.yml",
-                "--search-space-adr", "configs/search_spaces/ExtraTrees.yml",
+                "--search-space-adr", "configs/search_spaces/TabPFN.yml",
                 "--data-id", "0",
             ]
         }

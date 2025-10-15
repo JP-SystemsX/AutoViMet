@@ -12,6 +12,8 @@ from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 from catboost import CatBoostRegressor
 from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor
+from tabpfn import TabPFNRegressor
+
 
 
 class BaseModel(ABC):
@@ -154,11 +156,21 @@ class ExtraTrees(BaseModel):
     def predict(self, X):
         return self.model.predict(X)
 
+class TabPFN(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = TabPFNRegressor(device='auto', **kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X=X, y=y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+
+
+
 
 # TODO NN_TORCH
 # TODO FASTAI
-# TODO XT
-# TODO TabPFN
 # TODO LogisticRegression
 # TODO Mitra
 # TODO TabICL
