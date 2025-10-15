@@ -10,6 +10,7 @@ from sklearn.gaussian_process.kernels import Matern
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
+from catboost import CatBoostRegressor
 
 
 class BaseModel(ABC):
@@ -116,6 +117,17 @@ class LightGBM(BaseModel):
     
     def train(self, X, y):
         self.model.fit(X=X, y=y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+    
+class CatBoost(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = CatBoostRegressor(verbose=0, **kwargs)
+    
+    def train(self, X, y):
+        cat_cols = X.select_dtypes(include=["category", "object"]).columns.tolist()
+        self.model.fit(X=X, y=y, cat_features=cat_cols)
     
     def predict(self, X):
         return self.model.predict(X)
