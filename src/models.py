@@ -12,9 +12,7 @@ from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 from catboost import CatBoostRegressor
 from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor
-from tabpfn import TabPFNRegressor
-
-
+from sklearn.neural_network import MLPRegressor
 
 class BaseModel(ABC):
     def __init__(self, **kwargs):
@@ -158,6 +156,7 @@ class ExtraTrees(BaseModel):
 
 class TabPFN(BaseModel):
     def __init__(self, **kwargs):
+        from tabpfn import TabPFNRegressor # TODO Move up
         self.model = TabPFNRegressor(device='auto', **kwargs)
     
     def train(self, X, y):
@@ -166,6 +165,41 @@ class TabPFN(BaseModel):
     def predict(self, X):
         return self.model.predict(X)
 
+
+class MLP(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = MLPRegressor(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X=X, y=y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+
+
+class TabularNN(BaseModel):
+    def __init__(self, **kwargs):
+
+        num_categs_per_feature = []
+        architecture_desc = {
+            "has_vector_features": True,
+            "has_embed_features": True,
+            "from_logits": False,
+            "params": kwargs,
+            "num_categs_per_feature": None,
+            "embed_dims": None,
+
+        }
+        self.model = EmbedNet(
+            problem_type="REGRESSION",
+            num_net_outputs=1,
+        )
+    
+    def train(self, X, y):
+        self.model.fit(X=X, y=y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
 
 
 

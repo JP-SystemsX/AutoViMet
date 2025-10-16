@@ -1,0 +1,46 @@
+hyperparameters:
+- name: hidden_layer_sizes
+  default_value: [124, 64]
+  type: categorical
+  choices:
+  - [64, 32]
+  - [124, 64]
+  - [256, 128, 64]
+  - [512, 256, 128, 64]
+  - [1024, 512, 256, 128, 64]
+  - [2048, 1024, 512, 256, 128, 64]
+- name: activation
+  default_value: relu
+  type: categorical
+  choices:
+  - identity
+  - logistic
+  - tanh
+  - relu
+- name: alpha
+  default_value: 0.00001
+  type: uniform_float
+  lower: 0.00001
+  upper: 0.1
+  log: true
+- name: learning_rate
+  default_value: "constant"
+  type: categorical
+  choices:
+  - constant
+  - invscaling
+  - adaptive
+- name: learning_rate_init
+  default_value: 0.001
+  type: uniform_float
+  lower: 0.0001
+  upper: 0.2
+  log: true
+- name: max_iter
+  default_value: 200
+  type: categorical
+  choices:
+  - 100
+  - 200
+  - 500
+  - 1000

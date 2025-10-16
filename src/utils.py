@@ -62,6 +62,8 @@ def make_dict_storable(advanced_dictionary: dict)->dict:
     for key, value in advanced_dictionary.items():
         if isinstance(value, (int, float, str)):
             pass
+        elif isinstance(value, np.integer):
+            value = int(value)
         elif isinstance(value, (bool, np.bool)):
             value = 1 if value else 0
         elif isinstance(value, (bytes, Path, list, FeatureMetadata)) or value is None:
