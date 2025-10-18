@@ -54,6 +54,9 @@ def main(
     X_train_ = feature_generator.fit_transform(X=X_train_, y=y_train_)
     X_val_ = feature_generator.transform(X_val_)
 
+    # TODO Repeat HPO for every split (only fair because AG can reoptimize as well)
+    # TODO start from default
+
     # Optimize Model
     cs = get_configspace(search_space_adr)
     configs = cs.sample_configuration(n_trials) 

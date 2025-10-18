@@ -1,0 +1,46 @@
+hyperparameters:
+- name: criterion
+  default_value: "friedman_mse"
+  type: categorical
+  choices:
+  - squared_error
+  - friedman_mse
+  - absolute_error
+  - poisson
+- name: min_samples_split
+  default_value: 4
+  type: uniform_int
+  lower: 2
+  upper: 20 
+- name: min_samples_leaf
+  default_value: 2
+  type: uniform_int
+  lower: 2
+  upper: 32
+- name: leaf_model
+  default_value: "None"
+  type: categorical
+  choices:
+  - Lasso
+  - Ridge
+  - LinearRegression
+  - RandomForestRegressor
+  - None # ~ DeNormalizableLinearRegression
+- name: use_pruning
+  default_value: true
+  type: categorical
+  choices:
+  - true
+  - false
+- name: smoothing_constant
+  default_value: 15
+  type: categorical
+  choices:
+  - 0
+  - 0.5
+  - 1
+  - 2
+  - 5
+  - 10
+  - 15
+  - 30
