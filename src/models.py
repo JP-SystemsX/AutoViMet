@@ -15,6 +15,7 @@ from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from m5py import M5Prime
 from cubist import Cubist
+from sklearn.ensemble import GradientBoostingRegressor
 
 import m5py.main as m5main # Bug in M5 --> Monkey patching
 from m5py.main import LinRegLeafModel
@@ -226,6 +227,15 @@ class CubistModel(BaseModel):
         return self.model.predict(X)
 
 
+class GradientBoosting(BaseModel): # bstTrees 
+    def __init__(self, **kwargs):
+        self.model = GradientBoostingRegressor(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X=X, y=y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
 
 
 # ! Monkey Patch for M5

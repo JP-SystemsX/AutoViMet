@@ -1,0 +1,44 @@
+hyperparameters:
+- name: loss
+  default_value: "squared_error"
+  type: categorical
+  choices:
+  - squared_error
+  - absolute_error
+  - huber
+  - quantile
+- name: learning_rate
+  default_value: 0.1
+  type: uniform_float
+  lower: 0.0001
+  upper: 0.5
+  log: true
+- name: n_estimators
+  default_value: 100
+  type: categorical
+  choices:
+  - 100
+  - 200
+  - 500
+  - 1000
+- name: subsample
+  default_value: 1.0
+  type: uniform_float
+  lower: 0.5
+  upper: 1.0
+- name: criterion
+  default_value: "friedman_mse"
+  type: categorical
+  choices:
+  - squared_error
+  - friedman_mse
+- name: min_samples_split
+  default_value: 2
+  type: uniform_int
+  lower: 2
+  upper: 20
+- name: max_depth
+  default_value: 3
+  type: uniform_int
+  lower: 1
+  upper: 7
