@@ -1,0 +1,28 @@
+hyperparameters:
+- name: n_rules
+  default_value: 500
+  type: uniform_int
+  lower: 1
+  upper: 1000
+  log: true
+- name: n_committees
+  default_value: 5
+  type: uniform_int
+  lower: 1
+  upper: 10
+- name: extrapolation
+  default_value: 0.05
+  type: uniform_float
+  lower: 0.0
+  upper: 0.15
+- name: unbiased
+  default_value: true
+  type: categorical
+  choices:
+  - true
+  - false
+- name: neighbors # Wanted to set it to auto but warning claimed "auto" should be disabled?!
+  default_value: 5
+  type: uniform_int
+  lower: 1
+  upper: 9

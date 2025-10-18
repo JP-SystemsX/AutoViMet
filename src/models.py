@@ -14,7 +14,9 @@ from catboost import CatBoostRegressor
 from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from m5py import M5Prime
-import m5py.main as m5main # Bug in code --> Monkey patching M5
+from cubist import Cubist
+
+import m5py.main as m5main # Bug in M5 --> Monkey patching
 from m5py.main import LinRegLeafModel
 import numpy as np
 from sklearn.tree import _tree
@@ -213,6 +215,20 @@ class M5(BaseModel):
         return self.model.predict(X)
 
 
+class CubistModel(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = Cubist(auto=False, **kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X=X, y=y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+
+
+
+
+# ! Monkey Patch for M5
 def predict_from_leaves(m5p, X, smoothing=True, smoothing_constant=15):
     """
     Predicts using the M5P tree, without using the compiled sklearn
