@@ -3,3 +3,4 @@ configs/data_configs/vimet_bench.yml
 *.pyc
 catboost_info/*
 AutoGluonModels/*
+tmp/*
