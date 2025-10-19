@@ -1,26 +1,17 @@
 import yaml
 from utils import (
-    get_configspace, 
     load_data, 
-    make_dict_storable, 
-    get_hardware_resources, 
     store_complex_dict, 
     archive_config,
-    random_search
+    random_search,
+    automl_search,
     )
 from autogluon.features.generators import AutoMLPipelineFeatureGenerator
 import models
 import metrics
-import time
-from tqdm.auto import tqdm
-import pandas as pd
-import sqlite3
 from collections import defaultdict
-import uuid
 import typer
-from typer_config import use_yaml_config
-from ConfigSpace import Configuration
-from copy import deepcopy
+import time
 
 
 app = typer.Typer(pretty_exceptions_enable=False)
@@ -33,7 +24,7 @@ def main(
         data_config_adr: str = None, # on which data to evaluate
         search_space_adr: str = None,
         data_id: int = None,
-        search_algo: str = "random", # TODO "automl"
+        search_algo: str = "random", # "automl"
 ):
     with open(eval_config_adr, 'r') as f:
         eval_config = yaml.safe_load(f)
@@ -45,16 +36,13 @@ def main(
     data_config_hash = archive_config("results.db", config_path=data_config_adr, table_name="data_configs")
 
 
-    # TODO start from default
-
-
-
-
     # Evaluate best Model (Time Series Cross Validation)
     data_loader = load_data(data_config_adr, id=data_id) 
     results = defaultdict(list)
     for X_train, y_train, X_test, y_test in data_loader:
         # Repeat HPO for every split (only fair because AG can (or must) re-optimize as well)
+        model = None
+        search_start = time.time()
         match search_algo:
             case "random":
                 best_config, search_id = random_search(
@@ -68,18 +56,31 @@ def main(
                     preferences=preferences,
                     data_id=data_id
                 )
+            case "automl":
+                model, search_id, best_config= automl_search(
+                    X_train=X_train,
+                    y_train=y_train,
+                    model_config_adr=search_space_adr,
+                    model_name=model_name,
+                    preferences=preferences,
+                )
             case _:
                 raise NotImplementedError(f"Search Algorithm {search_algo} not implemented.")
-
-        model = getattr(models, model_name)(**best_config)
-        # preprocess dataset
-        feature_generator = AutoMLPipelineFeatureGenerator()
-        X_train = feature_generator.fit_transform(X=X_train, y=y_train)
-        X_test = feature_generator.transform(X_test)
-        # Train Model on full train set
-        model.train(X_train, y_train)
+        search_duration = time.time() - search_start
+        results["search_durations"].append(search_duration)
+        if model is None:
+            model = getattr(models, model_name)(**best_config)
+            # preprocess dataset
+            feature_generator = AutoMLPipelineFeatureGenerator()
+            X_train = feature_generator.fit_transform(X=X_train, y=y_train)
+            X_test = feature_generator.transform(X_test)
+            # Train Model on full train set
+            model.train(X_train, y_train)
         # Evaluate Model on test set
+        prediction_start_time = time.time()
         prediction = model.predict(X_test)
+        prediction_duration = time.time() - prediction_start_time
+        results["prediction_time"].append(prediction_duration)
         for metric_name, metric in metric_collection.items():
             results[metric_name].append(metric(y_test, prediction))
         
@@ -97,9 +98,6 @@ def main(
         database_path="results.db", 
         table_name="results"
     )
-
-    # TODO Evaluate best Model (k-fold Cross Validation)
-    # Do they agree?
 
 
 if __name__ == "__main__":

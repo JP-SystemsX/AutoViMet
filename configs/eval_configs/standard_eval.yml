@@ -4,5 +4,6 @@ metrics:
   - mean_squared_error
   - r2_score
   - mean_absolute_percentage_error
+  - root_mean_squared_error
 preferences:
   r2_score: -1.0 # Higher is better

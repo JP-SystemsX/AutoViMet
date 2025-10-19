@@ -1,0 +1,5 @@
+fit_kwargs:
+  time_limit: 3600  # 1 hour in seconds
+  presets: "best_quality"
+  
+  

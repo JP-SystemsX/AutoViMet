@@ -22,6 +22,8 @@ import metrics as metrics
 import time
 import pandas as pd
 from autogluon.features.generators import AutoMLPipelineFeatureGenerator
+import auto_models 
+
 
 
 def get_configspace(path: str | Path) -> ConfigSpace.ConfigurationSpace:
@@ -34,7 +36,6 @@ def load_data(data_config_adr: str, id: int = None):
     with open(data_config_adr, 'r') as f:
         data_config = yaml.safe_load(f)
 
-    # TODO Implement data loading logic based on data_config
     if data_config["origin"] == "OpenML":
         if data_config["type"] == "Benchmark":
             assert id is not None, "ID must be provided for OpenML Benchmark datasets."
@@ -50,6 +51,7 @@ def load_data(data_config_adr: str, id: int = None):
                         train_indices, test_indices = task.get_train_test_split_indices(repeat=repeat, fold=fold, sample=sample)
                         yield X.iloc[train_indices], y.iloc[train_indices], X.iloc[test_indices], y.iloc[test_indices]
     elif data_config["origin"] == "Custom":
+        # TODO Evaluate best AutoViMet Model (k-fold Cross Validation vs time series split) --> Do they agree?
         if data_config["type"] == "Benchmark":
             # TODO implement benchmark loader function
             pass
@@ -356,3 +358,25 @@ def random_search(
     print("Best Config found:", best_config)    
 
     return best_config, search_id
+
+
+def automl_search(
+        X_train: pd.DataFrame,
+        y_train: pd.Series,
+        model_name: str,
+        model_config_adr: str = None, # alternative name for search_space_adr
+        preferences: dict = None,
+):
+    X_train = deepcopy(X_train)
+    y_train = deepcopy(y_train)
+    search_id = str(uuid.uuid4())
+    # Load Config
+    with open(model_config_adr, 'r') as f:
+        model_config = yaml.safe_load(f)
+    metric = max(preferences, key=lambda k: abs(preferences[k])) # TODO Support Multi Objective Optimization
+    model = getattr(auto_models, model_name)(metric=metric, config=model_config, search_id=search_id)
+
+    model.train(X_train, y_train)
+
+    info = model.info()
+    return model, search_id, make_dict_storable(info)
