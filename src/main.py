@@ -5,7 +5,8 @@ from utils import (
     make_dict_storable, 
     get_hardware_resources, 
     store_complex_dict, 
-    archive_config
+    archive_config,
+    random_search
     )
 from autogluon.features.generators import AutoMLPipelineFeatureGenerator
 import models
@@ -21,6 +22,7 @@ from typer_config import use_yaml_config
 from ConfigSpace import Configuration
 from copy import deepcopy
 
+
 app = typer.Typer(pretty_exceptions_enable=False)
 
 # @use_yaml_config(param_name="config")
@@ -30,7 +32,8 @@ def main(
         eval_config_adr: str = None, # How to evaluate the model
         data_config_adr: str = None, # on which data to evaluate
         search_space_adr: str = None,
-        data_id: int = None
+        data_id: int = None,
+        search_algo: str = "random", # TODO "automl"
 ):
     with open(eval_config_adr, 'r') as f:
         eval_config = yaml.safe_load(f)
@@ -40,82 +43,34 @@ def main(
 
     search_space_hash = archive_config("results.db", config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name})
     data_config_hash = archive_config("results.db", config_path=data_config_adr, table_name="data_configs")
-    search_id = str(uuid.uuid4())
 
-    # load dataset
-    data_loader = load_data(data_config_adr, id=data_id) 
-    X_train, y_train, _, _ = next(data_loader)
-    validation_split = len(y_train) // 10
-    X_val_, y_val_ = X_train[-validation_split:], y_train[-validation_split:]
-    X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
 
-    # preprocess dataset
-    feature_generator = AutoMLPipelineFeatureGenerator()
-    X_train_ = feature_generator.fit_transform(X=X_train_, y=y_train_)
-    X_val_ = feature_generator.transform(X_val_)
-
-    # TODO Repeat HPO for every split (only fair because AG can reoptimize as well)
     # TODO start from default
 
-    # Optimize Model
-    cs = get_configspace(search_space_adr)
-    configs = cs.sample_configuration(n_trials) 
-    for config in tqdm(configs):
-        X_train = deepcopy(X_train_)
-        y_train = deepcopy(y_train_)
-        X_val = deepcopy(X_val_)
-        y_val = deepcopy(y_val_)
 
-        # Train Model
-        model = getattr(models, model_name)(**dict(config))
-
-        start = time.time()
-        model.train(X_train, y_train)
-        train_duration = time.time() - start
-        # Evaluate Model
-        start = time.time()
-        prediction = model.predict(X_val)
-        inference_duration = ((time.time() - start) / len(y_val)) * 1000  
-        results = {
-            "model": str(model_name),
-            "search_id": search_id,
-            "search_space_hash": search_space_hash,
-            "data_config_hash": data_config_hash,
-            "data_id": data_id,
-            "config": dict(config),
-            "train_duration": train_duration,
-            "inference_duration": inference_duration,
-            "timestamp": time.time(),
-            **get_hardware_resources()
-        }
-        for metric_name, metric in metric_collection.items():
-            results[metric_name] = metric(y_val, prediction)
-        # Write Results to DB 
-        store_complex_dict(results, database_path="results.db", table_name="trials")
-
-    # Load Best Config
-    conn = sqlite3.connect("results.db")
-    results = pd.read_sql(
-        "SELECT * FROM trials where search_space_hash = ? and search_id = ? and data_config_hash = ? and data_id = ?", 
-        conn, 
-        params=(search_space_hash, search_id, data_config_hash, data_id)
-        )
-    conn.close()
-    assert len(results) == n_trials, f"Expected {n_trials} results but got {len(results)}. Something went wrong during the evaluation."
-    results["preference_score"] = sum(results[metric] * weight for metric, weight in preferences.items())
-    incumbent = results.sort_values("preference_score", ascending=True).iloc[0]
-    best_config = yaml.safe_load(incumbent["config"])
-    # Type Cast back to original (e.g. we store bools as int two typecasts required to cast it back to original)
-    best_config = Configuration(cs, values=best_config)
-    best_config = Configuration(cs, vector=best_config._vector)
-    best_config = dict(best_config)
-    print("Best Config found:", best_config)
 
 
     # Evaluate best Model (Time Series Cross Validation)
     data_loader = load_data(data_config_adr, id=data_id) 
     results = defaultdict(list)
     for X_train, y_train, X_test, y_test in data_loader:
+        # Repeat HPO for every split (only fair because AG can (or must) re-optimize as well)
+        match search_algo:
+            case "random":
+                best_config, search_id = random_search(
+                    X_train=X_train,
+                    y_train=y_train,
+                    search_space_adr=search_space_adr,
+                    data_config_hash=data_config_hash,
+                    metric_collection=metric_collection,
+                    model_name=model_name,
+                    n_trials=n_trials,
+                    preferences=preferences,
+                    data_id=data_id
+                )
+            case _:
+                raise NotImplementedError(f"Search Algorithm {search_algo} not implemented.")
+
         model = getattr(models, model_name)(**best_config)
         # preprocess dataset
         feature_generator = AutoMLPipelineFeatureGenerator()

@@ -14,6 +14,14 @@ import uuid
 from time import sleep
 from warnings import warn
 import numpy as np
+from copy import deepcopy
+from tqdm.auto import tqdm
+from ConfigSpace import Configuration
+import models as models
+import metrics as metrics
+import time
+import pandas as pd
+from autogluon.features.generators import AutoMLPipelineFeatureGenerator
 
 
 def get_configspace(path: str | Path) -> ConfigSpace.ConfigurationSpace:
@@ -265,3 +273,86 @@ def archive_config(database_path: Path, config_path: Path, table_name: str, extr
         }
     ) 
     return config_hash
+
+
+def random_search(
+        X_train: pd.DataFrame,
+        y_train: pd.Series,
+        search_space_adr: str, 
+        data_config_hash: str, 
+        metric_collection: dict,
+        model_name: str, 
+        n_trials: int, 
+        preferences: dict,
+        data_id: int = None
+        ):
+    assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
+    # Split Data into Train and Validation
+    validation_split = len(y_train) // 10
+    X_val_, y_val_ = X_train[-validation_split:], y_train[-validation_split:]
+    X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
+
+    # preprocess dataset
+    feature_generator = AutoMLPipelineFeatureGenerator()
+    X_train_ = feature_generator.fit_transform(X=X_train_, y=y_train_)
+    X_val_ = feature_generator.transform(X_val_)
+
+
+    # Optimize Model
+    search_space_hash = archive_config("results.db", config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name}) # Regenerate
+    cs = get_configspace(search_space_adr)
+    configs = [cs.get_default_configuration()] + cs.sample_configuration(n_trials-1) 
+    search_id = str(uuid.uuid4())               
+    print(f"Evaluating {n_trials} configurations for model {model_name} on data config {data_config_hash}.")
+    for config in tqdm(configs):
+        X_train = deepcopy(X_train_)
+        y_train = deepcopy(y_train_)
+        X_val = deepcopy(X_val_)
+        y_val = deepcopy(y_val_)
+
+        # Train Model
+        model = getattr(models, model_name)(**dict(config))
+
+        start = time.time()
+        model.train(X_train, y_train)
+        train_duration = time.time() - start
+        # Evaluate Model
+        start = time.time()
+        prediction = model.predict(X_val)
+        inference_duration = ((time.time() - start) / len(y_val)) * 1000  
+        results = {
+            "model": str(model_name),
+            "search_id": search_id,
+            "search_space_hash": search_space_hash,
+            "data_config_hash": data_config_hash,
+            "data_id": data_id,
+            "config": dict(config),
+            "train_duration": train_duration,
+            "inference_duration": inference_duration,
+            "timestamp": time.time(),
+            **get_hardware_resources()
+        }
+        for metric_name, metric in metric_collection.items():
+            results[metric_name] = metric(y_val, prediction)
+        # Write Results to DB 
+        store_complex_dict(results, database_path="results.db", table_name="trials")
+
+    # Load Best Config
+    conn = sqlite3.connect("results.db")
+    results = pd.read_sql(
+        "SELECT * FROM trials where search_space_hash = ? and search_id = ? and data_config_hash = ? and data_id = ?", 
+        conn, 
+        params=(search_space_hash, search_id, data_config_hash, data_id)
+        )
+    conn.close()
+    assert len(results) == n_trials, f"Expected {n_trials} results but got {len(results)}. Something went wrong during the evaluation."
+    results["preference_score"] = sum(results[metric] * weight for metric, weight in preferences.items())
+    incumbent = results.sort_values("preference_score", ascending=True).iloc[0]
+    best_config = yaml.safe_load(incumbent["config"])
+    # Type Cast back to original (e.g. we store bools as int two typecasts required to cast it back to original)
+    best_config = Configuration(cs, values=best_config)
+    best_config = Configuration(cs, vector=best_config._vector)
+    best_config = dict(best_config)
+    print("Best Config found:", best_config)    
+
+    return best_config, search_id

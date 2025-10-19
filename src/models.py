@@ -356,11 +356,3 @@ def predict_from_leaves(m5p, X, smoothing=True, smoothing_constant=15):
     return y_predicted
 
 m5main.predict_from_leaves = predict_from_leaves
-
-
-# TODO NN_TORCH
-# TODO FASTAI
-# TODO LogisticRegression
-# TODO Mitra
-# TODO TabICL
-# TODO RealMLP
