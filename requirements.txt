@@ -5,9 +5,9 @@ openml
 typer
 typer-config
 tabpfn
---index-url https://download.pytorch.org/whl/cu121
+m5py
+cubist
 torch==2.5.1
 torchvision==0.20.1
 torchaudio==2.5.1
-m5py
-cubist
+--extra-index-url https://download.pytorch.org/whl/cu121

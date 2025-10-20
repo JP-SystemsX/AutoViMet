@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --cpus-per-task=4 # CPU Count
-#SBATCH --gres=gpu:1
 #SBATCH --nodes=1
 #SBATCH --mem=160G # Working Memory
 #SBATCH --time=1-00:00:00  # Runtime HH:MM:SS
@@ -35,4 +34,4 @@ elif [[ $FILE == configs/automl_configs/* ]]; then
 fi
 
 source ./hpc/modules.sh
-srun python3 ./src/main.py --model-name "$MODEL_NAME" --eval-config-adr "configs/eval_configs/standard_eval.yml" --data-config-adr "configs/data_configs/ctr23.yaml" --search-space-adr "$FILE" --data-id "$DATA_ID" --search-algo "$SEARCH_ALGO"
+srun python3 ./src/main.py --model-name "$MODEL_NAME" --eval-config-adr "configs/eval_configs/standard_eval.yml" --data-config-adr "configs/data_configs/ctr23.yml" --search-space-adr "$FILE" --data-id "$DATA_ID" --search-algo "$SEARCH_ALGO"

@@ -23,6 +23,7 @@ import time
 import pandas as pd
 from autogluon.features.generators import AutoMLPipelineFeatureGenerator
 import auto_models 
+from math import inf
 
 
 
@@ -307,35 +308,51 @@ def random_search(
     search_id = str(uuid.uuid4())               
     print(f"Evaluating {n_trials} configurations for model {model_name} on data config {data_config_hash}.")
     for config in tqdm(configs):
-        X_train = deepcopy(X_train_)
-        y_train = deepcopy(y_train_)
-        X_val = deepcopy(X_val_)
-        y_val = deepcopy(y_val_)
+        try:
+            X_train = deepcopy(X_train_)
+            y_train = deepcopy(y_train_)
+            X_val = deepcopy(X_val_)
+            y_val = deepcopy(y_val_)
 
-        # Train Model
-        model = getattr(models, model_name)(**dict(config))
+            # Train Model
+            model = getattr(models, model_name)(**dict(config))
 
-        start = time.time()
-        model.train(X_train, y_train)
-        train_duration = time.time() - start
-        # Evaluate Model
-        start = time.time()
-        prediction = model.predict(X_val)
-        inference_duration = ((time.time() - start) / len(y_val)) * 1000  
-        results = {
-            "model": str(model_name),
-            "search_id": search_id,
-            "search_space_hash": search_space_hash,
-            "data_config_hash": data_config_hash,
-            "data_id": data_id,
-            "config": dict(config),
-            "train_duration": train_duration,
-            "inference_duration": inference_duration,
-            "timestamp": time.time(),
-            **get_hardware_resources()
-        }
-        for metric_name, metric in metric_collection.items():
-            results[metric_name] = metric(y_val, prediction)
+            start = time.time()
+            model.train(X_train, y_train)
+            train_duration = time.time() - start
+            # Evaluate Model
+            start = time.time()
+            prediction = model.predict(X_val)
+            inference_duration = ((time.time() - start) / len(y_val)) * 1000  
+            results = {
+                "model": str(model_name),
+                "search_id": search_id,
+                "search_space_hash": search_space_hash,
+                "data_config_hash": data_config_hash,
+                "data_id": data_id,
+                "config": dict(config),
+                "train_duration": train_duration,
+                "inference_duration": inference_duration,
+                "timestamp": time.time(),
+                **get_hardware_resources()
+            }
+            for metric_name, metric in metric_collection.items():
+                results[metric_name] = metric(y_val, prediction)
+        except:
+            results = {
+                "model": str(model_name),
+                "search_id": search_id,
+                "search_space_hash": search_space_hash,
+                "data_config_hash": data_config_hash,
+                "data_id": data_id,
+                "config": dict(config),
+                "train_duration": train_duration,
+                "inference_duration": inference_duration,
+                "timestamp": time.time(),
+                **get_hardware_resources()
+            }
+            for metric_name, metric in metric_collection.items():
+                results[metric_name] = inf
         # Write Results to DB 
         store_complex_dict(results, database_path="results.db", table_name="trials")
 

@@ -12,6 +12,8 @@ import metrics
 from collections import defaultdict
 import typer
 import time
+from pathlib import Path
+import os
 
 
 app = typer.Typer(pretty_exceptions_enable=False)
@@ -101,4 +103,5 @@ def main(
 
 
 if __name__ == "__main__":
+    os.chdir(Path(__file__).parent.parent)
     app()
