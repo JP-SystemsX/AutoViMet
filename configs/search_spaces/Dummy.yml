@@ -1,0 +1,8 @@
+# Dummy
+hyperparameters:
+- name: strategy
+  default_value: mean
+  type: categorical
+  choices: 
+    - mean
+    - median

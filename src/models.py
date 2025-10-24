@@ -304,7 +304,7 @@ class Huber(BaseModel):
         return self.model.predict(X)
     
 
-class DummyModel(BaseModel):
+class Dummy(BaseModel):
     def __init__(self, **kwargs):
         from sklearn.dummy import DummyRegressor
         self.model = DummyRegressor(**kwargs)
