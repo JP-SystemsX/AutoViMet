@@ -1,0 +1,28 @@
+# PassiveAggressive
+hyperparameters:
+- name: C
+  default_value: 1.0
+  type: uniform_float
+  log: true
+  lower: 0.0001
+  upper: 1000
+- name: fit_intercept
+  default_value: true
+  type: categorical
+  choices:
+    - true
+    - false
+- name: loss
+  default_value: epsilon_insensitive
+  type: categorical
+  choices:
+    - epsilon_insensitive
+    - squared_epsilon_insensitive
+- name: epsilon
+  default_value: 0.1
+  type: uniform_float
+  lower: 0.0001
+  upper: 100.0
+  log: true
+
+

@@ -315,6 +315,17 @@ class Dummy(BaseModel):
     def predict(self, X):
         return self.model.predict(X)
     
+
+class PassiveAggressive(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = linear_model.PassiveAggressiveRegressor(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+    
     
 
 # ! Monkey Patch for M5
