@@ -5,6 +5,7 @@ from utils import (
     archive_config,
     random_search,
     automl_search,
+    dehb_search
     )
 from autogluon.features.generators import AutoMLPipelineFeatureGenerator
 import models
@@ -66,6 +67,34 @@ def main(
                     model_name=model_name,
                     preferences=preferences,
                 )
+            case "DEHB":
+                best_config, search_id = dehb_search(
+                    X_train=X_train,
+                    y_train=y_train,
+                    search_space_adr=search_space_adr,
+                    data_config_hash=data_config_hash,
+                    metric_collection=metric_collection,
+                    model_name=model_name,
+                    n_trials=n_trials,
+                    preferences=preferences,
+                    data_id=data_id,
+                    n_workers=4, #TODO make accesible via CLI
+                    mode="DEHB"
+                )
+            case "DE":
+                best_config, search_id = dehb_search(
+                    X_train=X_train,
+                    y_train=y_train,
+                    search_space_adr=search_space_adr,
+                    data_config_hash=data_config_hash,
+                    metric_collection=metric_collection,
+                    model_name=model_name,
+                    n_trials=n_trials,
+                    preferences=preferences,
+                    data_id=data_id,
+                    n_workers=4, #TODO make accesible via CLI
+                    mode="DE"
+                )
             case _:
                 raise NotImplementedError(f"Search Algorithm {search_algo} not implemented.")
         search_duration = time.time() - search_start
@@ -95,6 +124,8 @@ def main(
             "data_config_hash": data_config_hash,
             "data_id": data_id,
             "config": best_config,
+            "search_algo": search_algo,
+            "timestamp": time.time(),
             **results
         }, 
         database_path="results.db", 

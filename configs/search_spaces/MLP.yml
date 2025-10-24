@@ -40,7 +40,5 @@ hyperparameters:
   default_value: 200
   type: categorical
   choices:
-  - 100
   - 200
   - 500
-  - 1000

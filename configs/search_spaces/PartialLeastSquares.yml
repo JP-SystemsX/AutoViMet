@@ -10,12 +10,12 @@ hyperparameters:
   choices:
     - true
     - false
-- name: max_iter
-  default_value: 500
-  type: uniform_int
-  lower: 100
-  upper: 10000
-  log: true
+# - name: max_iter
+#   default_value: 500
+#   type: uniform_int
+#   lower: 100
+#   upper: 10000
+#   log: true
 - name: tol
   default_value: 0.000001
   type: uniform_float

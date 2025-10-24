@@ -9,7 +9,7 @@ hyperparameters:
   default_value: 6
   type: uniform_int
   lower: 4
-  upper: 10
+  upper: 8
 - name: l2_leaf_reg
   default_value: 3.0
   type: uniform_float

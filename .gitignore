@@ -4,5 +4,7 @@ configs/data_configs/vimet_bench.yml
 catboost_info/*
 AutoGluonModels/*
 tmp/*
-*/logs/*
+hpc/logs/*
+hpc/logs_old/*
 hpc/venvs/*
+cache/

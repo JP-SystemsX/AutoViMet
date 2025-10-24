@@ -24,12 +24,48 @@ import pandas as pd
 from autogluon.features.generators import AutoMLPipelineFeatureGenerator
 import auto_models 
 from math import inf
+import pickle
+from functools import cache, partial
 
 
 
 def get_configspace(path: str | Path) -> ConfigSpace.ConfigurationSpace:
     """Load a ConfigSpace from a given file path."""
     return ConfigSpace.ConfigurationSpace.from_yaml(path)
+
+
+@cache
+def get_dataset(data_id: int, id: int):
+    """HPC leads to hickups in standard caching procedure -> Custom Caching"""
+    cache = Path("./cache")
+    cache.mkdir(exist_ok=True, parents=True)
+    suite_cache = Path(f"./cache/{data_id}.pkl")
+    if suite_cache.exists():
+        with open(suite_cache, "rb") as f:
+            suite = pickle.load(f)
+    else: 
+        suite = openml.study.get_suite(data_id)  # Get a curated list of tasks for classification
+        with open(suite_cache, "wb") as f:
+            pickle.dump(suite, f)
+    task_id = suite.tasks[id]
+    task_cache = Path(f"./cache/{data_id}_{task_id}.pkl")
+    if task_cache.exists():
+        with open(task_cache, "rb") as f:
+            task = pickle.load(f)
+    else:
+        task = openml.tasks.get_task(task_id)
+        with open(task_cache, "wb") as f:
+            pickle.dump(task, f)
+    ds_cache = Path(f"./cache/{data_id}_{task_id}_ds.pkl")
+    if ds_cache.exists():
+        with open(ds_cache, "rb") as f:
+            dataset = pickle.load(f)
+    else:
+        dataset = task.get_dataset()
+        with open(ds_cache, "wb") as f:
+            pickle.dump(dataset, f)
+    return dataset, task
+
 
 
 def load_data(data_config_adr: str, id: int = None):
@@ -40,10 +76,7 @@ def load_data(data_config_adr: str, id: int = None):
     if data_config["origin"] == "OpenML":
         if data_config["type"] == "Benchmark":
             assert id is not None, "ID must be provided for OpenML Benchmark datasets."
-            suite = openml.study.get_suite(data_config["data_id"])  # Get a curated list of tasks for classification
-            task_id = suite.tasks[id]
-            task = openml.tasks.get_task(task_id)
-            dataset = task.get_dataset()
+            dataset, task = get_dataset(data_id=data_config["data_id"], id=id)
             X, y, _, _ = dataset.get_data(target=task.target_name)
             repeats, folds, samples = task.get_split_dimensions()
             for repeat in range(repeats):
@@ -75,7 +108,7 @@ def make_dict_storable(advanced_dictionary: dict)->dict:
             pass
         elif isinstance(value, np.integer):
             value = int(value)
-        elif isinstance(value, (bool, np.bool)):
+        elif isinstance(value, (bool, np.bool_)):
             value = 1 if value else 0
         elif isinstance(value, (bytes, Path, list, FeatureMetadata)) or value is None:
             value = str(value)
@@ -112,9 +145,13 @@ def hash_dict(d: dict) -> str:
     
     return hash_object.hexdigest()
 
-def store_complex_dict(d:dict, database_path: str | Path, table_name: str) -> str:
+def store_complex_dict(d:dict, database_path: str | Path, table_name: str, cache=False, cache_id=None) -> str:
     storable_dictionary = make_dict_storable(d)
     hash = hash_dict(storable_dictionary)
+    if isinstance(database_path, str):
+        database_path = Path(database_path)
+    if cache:
+        database_path =  (database_path.parent / f"{database_path.stem}") / f"{cache_id}.db"
 
     create_sqlite_table_from_dict(
         database_path=database_path,
@@ -229,7 +266,7 @@ def create_sqlite_table_from_dict(database_path: str | Path, table_name: str, da
         except Exception as e:
             print(e, i)
             i += 1
-            sleep(1)
+            sleep(0.1)
             if i > 100:
                 break
 
@@ -278,6 +315,160 @@ def archive_config(database_path: Path, config_path: Path, table_name: str, extr
     return config_hash
 
 
+def dehb_search(
+        X_train: pd.DataFrame,
+        y_train: pd.Series,
+        search_space_adr: str, 
+        data_config_hash: str, 
+        metric_collection: dict,
+        model_name: str, 
+        n_trials: int, 
+        preferences: dict,
+        data_id: int = None,
+        n_workers=4, #TODO send through
+        mode = "DEHB" #or 'DE'
+        ):
+    from dehb import DEHB, DE
+    assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
+    # Split Data into Train and Validation
+    validation_split = len(y_train) // 10
+    X_val_, y_val_ = X_train[-validation_split:], y_train[-validation_split:]
+    X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
+
+    # preprocess dataset
+    feature_generator = AutoMLPipelineFeatureGenerator()
+    X_train_ = feature_generator.fit_transform(X=X_train_, y=y_train_)
+    X_val_ = feature_generator.transform(X_val_)
+
+
+    # Optimize Model
+    search_space_hash = archive_config("results.db", config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name}) # Regenerate
+    cs = get_configspace(search_space_adr)
+    search_id = str(uuid.uuid4())               
+    print(f"Evaluating {n_trials} configurations for model {model_name} on data config {data_config_hash}.")
+
+    if mode == "DEHB":
+        optimization_algo = DEHB 
+    elif mode == "DE":
+        optimization_algo = DE
+    else:
+        raise NotImplementedError(f"Optimization Algo {mode} does not exist") 
+
+    optimizer = optimization_algo(
+        f=partial(
+            train,
+            X_train_=X_train_,
+            y_train_=y_train_,
+            X_val_=X_val_,
+            y_val_=y_val_,
+            metric_collection=metric_collection,
+            model_name=model_name,
+            search_id=search_id,
+            search_space_hash=search_space_hash,
+            data_config_hash=data_config_hash,
+            data_id=data_id,
+            preferences=preferences,
+        ),
+        cs=cs, 
+        dimensions=len(cs.get_hyperparameters()), 
+        min_fidelity=0.005, # Exact number is irrelevant just used to compute how many steps fit between lowest and highest fidelity
+        max_fidelity=1,
+        eta=4.64158883361, # Three steps from 1% to 100%
+        n_workers=n_workers,
+        )
+    trajectory, runtime, history = optimizer.run(
+        feval=n_trials,
+        seed=123,
+    )
+
+    best_config = optimizer.vector_to_configspace(optimizer.inc_config)
+    best_config = dict(best_config)
+    print("Best Config found:", best_config)    
+
+    return best_config, search_id
+
+
+
+def train(
+        config: Configuration,
+        fidelity: float,
+        X_train_: pd.DataFrame,
+        y_train_: pd.Series,
+        X_val_: pd.DataFrame,
+        y_val_: pd.Series,
+        metric_collection: dict,
+        model_name: str,
+        search_id: str,
+        search_space_hash: str,
+        data_config_hash: str,
+        data_id: int,
+        preferences: dict,
+):
+    X_train = deepcopy(X_train_)
+    y_train = deepcopy(y_train_)
+    X_val = deepcopy(X_val_)
+    y_val = deepcopy(y_val_)
+    if fidelity < 1.0:
+        idx = X_train.sample(frac=fidelity, random_state=123).index
+        y_train = y_train.loc[idx]
+        X_train = X_train.loc[idx]
+    model = getattr(models, model_name)(**dict(config))
+    start = time.time()
+    model.train(X_train, y_train)
+    train_duration = time.time() - start
+    # Evaluate Model
+    start = time.time()
+    prediction = model.predict(X_val)
+    inference_duration = ((time.time() - start) / len(y_val)) * 1000  
+    results = {
+        "model": str(model_name),
+        "search_id": search_id,
+        "search_space_hash": search_space_hash,
+        "data_config_hash": data_config_hash,
+        "data_id": data_id,
+        "config": dict(config),
+        "train_duration": train_duration,
+        "inference_duration": inference_duration,
+        "timestamp": time.time(),
+        **get_hardware_resources()
+    }
+    for metric_name, metric in metric_collection.items():
+        results[metric_name] = metric(y_val, prediction)
+
+    # Write Results to DB (So parallel that they often block each other)
+    store_complex_dict(results, database_path="results.db", table_name="trials", cache=True, cache_id=search_id)
+
+    preference_score = sum(results[metric] * weight for metric, weight in preferences.items())
+
+    return {
+        "fitness": preference_score,  # DE/DEHB minimizes
+        "cost": train_duration+inference_duration,
+        "info": {
+            "test_score": str(results),
+            "fidelity": fidelity
+        }
+    }
+
+def move_cached_data_to_db(dst_db: Path, cache_id):
+    if isinstance(dst_db, str):
+        dst_db = Path(dst_db)
+    src_db =  (dst_db.parent / f"{dst_db.stem}") / f"{cache_id}.db" 
+    table = "trials"
+    with sqlite3.connect(dst_db) as dst, sqlite3.connect(src_db) as src:
+        src.row_factory = sqlite3.Row
+        rows = src.execute(f"SELECT * FROM {table}").fetchall()
+        if rows:
+            columns = rows[0].keys()
+            placeholders = ",".join(["?"] * len(columns))
+            colnames = ",".join(columns)
+            insert_sql = f"INSERT INTO {table} ({colnames}) VALUES ({placeholders})"
+            dst.executemany(insert_sql, [tuple(r) for r in rows])
+            print(f"✅ Inserted {len(rows)} rows from {src_db} into {dst_db}.")
+            # Delete
+            src_db.unlink()
+        else:
+            print("No rows to transfer.")
+
 def random_search(
         X_train: pd.DataFrame,
         y_train: pd.Series,
@@ -309,52 +500,25 @@ def random_search(
     print(f"Evaluating {n_trials} configurations for model {model_name} on data config {data_config_hash}.")
     for config in tqdm(configs):
         try:
-            X_train = deepcopy(X_train_)
-            y_train = deepcopy(y_train_)
-            X_val = deepcopy(X_val_)
-            y_val = deepcopy(y_val_)
-
-            # Train Model
-            model = getattr(models, model_name)(**dict(config))
-
-            start = time.time()
-            model.train(X_train, y_train)
-            train_duration = time.time() - start
-            # Evaluate Model
-            start = time.time()
-            prediction = model.predict(X_val)
-            inference_duration = ((time.time() - start) / len(y_val)) * 1000  
-            results = {
-                "model": str(model_name),
-                "search_id": search_id,
-                "search_space_hash": search_space_hash,
-                "data_config_hash": data_config_hash,
-                "data_id": data_id,
-                "config": dict(config),
-                "train_duration": train_duration,
-                "inference_duration": inference_duration,
-                "timestamp": time.time(),
-                **get_hardware_resources()
-            }
-            for metric_name, metric in metric_collection.items():
-                results[metric_name] = metric(y_val, prediction)
-        except:
-            results = {
-                "model": str(model_name),
-                "search_id": search_id,
-                "search_space_hash": search_space_hash,
-                "data_config_hash": data_config_hash,
-                "data_id": data_id,
-                "config": dict(config),
-                "train_duration": train_duration,
-                "inference_duration": inference_duration,
-                "timestamp": time.time(),
-                **get_hardware_resources()
-            }
-            for metric_name, metric in metric_collection.items():
-                results[metric_name] = inf
-        # Write Results to DB 
-        store_complex_dict(results, database_path="results.db", table_name="trials")
+            train(
+                config=config,
+                fidelity=1.0,
+                X_train_=X_train_,
+                y_train_=y_train_,
+                X_val_=X_val_,
+                y_val_=y_val_,
+                metric_collection=metric_collection,
+                model_name=model_name,
+                search_id=search_id,
+                search_space_hash=search_space_hash,
+                data_config_hash=data_config_hash,
+                data_id=data_id,
+                preferences=preferences
+            )
+        except Exception as e:
+            warn(f"Config {config} failed, due to: {e}")
+    # read cache DB, move to main, then delete
+    move_cached_data_to_db(dst_db="results.db", cache_id=search_id)
 
     # Load Best Config
     conn = sqlite3.connect("results.db")
@@ -364,7 +528,7 @@ def random_search(
         params=(search_space_hash, search_id, data_config_hash, data_id)
         )
     conn.close()
-    assert len(results) == n_trials, f"Expected {n_trials} results but got {len(results)}. Something went wrong during the evaluation."
+    # assert len(results) == n_trials, f"Expected {n_trials} results but got {len(results)}. Something went wrong during the evaluation."
     results["preference_score"] = sum(results[metric] * weight for metric, weight in preferences.items())
     incumbent = results.sort_values("preference_score", ascending=True).iloc[0]
     best_config = yaml.safe_load(incumbent["config"])

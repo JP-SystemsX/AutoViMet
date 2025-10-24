@@ -41,4 +41,4 @@ hyperparameters:
   default_value: 3
   type: uniform_int
   lower: 1
-  upper: 7
+  upper: 8

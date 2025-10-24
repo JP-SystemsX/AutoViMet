@@ -37,7 +37,7 @@ hyperparameters:
   default_value: 6
   type: uniform_int
   lower: 2
-  upper: 10
+  upper: 8
 - name: n_estimators
   default_value: 100
   type: uniform_int
