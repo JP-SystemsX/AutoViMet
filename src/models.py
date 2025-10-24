@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
+import sys
 from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.datasets import make_friedman2
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel
-from sklearn.gaussian_process.kernels import RBF
-from sklearn.gaussian_process.kernels import Matern
+from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel, RBF, Matern
 from sklearn.ensemble import AdaBoostRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
@@ -17,6 +16,7 @@ from sklearn.neural_network import MLPRegressor
 from m5py import M5Prime
 from cubist import Cubist
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.linear_model import Ridge
 
 import m5py.main as m5main # Bug in M5 --> Monkey patching
 from m5py.main import LinRegLeafModel
@@ -244,9 +244,9 @@ class GradientBoosting(BaseModel): # bstTrees
         return self.model.predict(X)
     
 
-class Ridge(BaseModel):
+class RidgeRegressor(BaseModel):
     def __init__(self, **kwargs):
-        self.model = linear_model.Ridge(**kwargs)
+        self.model = Ridge(**kwargs)
     
     def train(self, X, y):
         self.model.fit(X, y)
@@ -350,8 +350,9 @@ class DecisionTree(BaseModel):
     
 
 class AdaBoost(BaseModel):
-    def __init__(self, **kwargs):
-        self.model = AdaBoostRegressor(**kwargs)
+    def __init__(self, estimator, **kwargs):
+        estimator = getattr(sys.modules[__name__], estimator)()
+        self.model = AdaBoostRegressor(estimator=estimator, **kwargs)
     
     def train(self, X, y):
         self.model.fit(X, y)
