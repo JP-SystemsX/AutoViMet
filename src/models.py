@@ -7,6 +7,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.gaussian_process.kernels import Matern
+from sklearn.ensemble import AdaBoostRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
@@ -24,6 +25,7 @@ from sklearn.tree import _tree
 from sklearn.tree._tree import DOUBLE
 import uuid
 from pathlib import Path
+from sklearn.tree import DecisionTreeRegressor
 
 
 
@@ -329,6 +331,27 @@ class PassiveAggressive(BaseModel):
 class Tweedie(BaseModel): # ~ Generalized Linear Model with Tweedie Distribution
     def __init__(self, **kwargs):
         self.model = linear_model.TweedieRegressor(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+    
+class DecisionTree(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = DecisionTreeRegressor(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+    
+
+class AdaBoost(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = AdaBoostRegressor(**kwargs)
     
     def train(self, X, y):
         self.model.fit(X, y)

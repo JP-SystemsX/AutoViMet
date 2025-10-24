@@ -1,0 +1,26 @@
+# DecisionTree
+hyperparameters:
+- name: criterion
+  default_value: squared_error
+  type: categorical
+  choices:
+    - squared_error
+    - friedman_mse
+    - absolute_error
+    - poisson
+- name: splitter
+  default_value: best
+  type: categorical
+  choices:
+    - best
+    - random
+- name: min_samples_split
+  default_value: 2
+  type: uniform_int
+  lower: 2
+  upper: 20
+- name: max_features
+  default_value: 1.0
+  type: uniform_float
+  lower: 0.1
+  upper: 1.0
