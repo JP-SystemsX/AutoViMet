@@ -12,6 +12,7 @@ from sklearn.svm import SVR
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 from catboost import CatBoostRegressor
+from sklearn.ensemble import BaggingRegressor
 from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from m5py import M5Prime
@@ -374,6 +375,17 @@ class KNN(BaseModel):
 class SGD(BaseModel):
     def __init__(self, **kwargs):
         self.model = linear_model.SGDRegressor(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+
+class Bagging(BaseModel):
+    def __init__(self, estimator, **kwargs):
+        estimator = getattr(sys.modules[__name__], estimator)()
+        self.model = BaggingRegressor(estimator=estimator, **kwargs)
     
     def train(self, X, y):
         self.model.fit(X, y)

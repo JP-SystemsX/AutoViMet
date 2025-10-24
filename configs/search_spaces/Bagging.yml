@@ -1,0 +1,31 @@
+# Bagging
+hyperparameters:
+- name: estimator
+  default_value: "DecisionTreeRegressor"
+  type: categorical
+  choices:
+  - "DecisionTreeRegressor"
+  - "SVR"
+  - "KNeighborsRegressor"
+  - "Ridge"
+# - name: n_estimators
+#   default_value: 50
+#   type: uniform_int
+#   lower: 10
+#   upper: 500
+- name: max_samples
+  default_value: 1.0
+  type: uniform_float
+  lower: 0.1
+  upper: 1.0
+- name: max_features
+  default_value: 1.0
+  type: uniform_float
+  lower: 0.1
+  upper: 1.0
+- name: bootstrap_features
+  default_value: false
+  type: categorical
+  choices:
+  - true
+  - false
