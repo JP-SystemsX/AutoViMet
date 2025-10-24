@@ -1,0 +1,31 @@
+# ElasticNet
+hyperparameters:
+- name: alpha
+  default_value: 1.0
+  type: uniform_float
+  log: true
+  lower: 0.0001
+  upper: 10
+- name: l1_ratio
+  default_value: 0.5
+  type: uniform_float
+  lower: 0.0
+  upper: 1.0
+- name: selection
+  default_value: cyclic
+  type: categorical
+  choices:
+    - cyclic
+    - random
+- name: fit_intercept
+  default_value: true
+  type: categorical
+  choices:
+    - true
+    - false
+- name: positive
+  default_value: false
+  type: categorical
+  choices:
+    - true
+    - false

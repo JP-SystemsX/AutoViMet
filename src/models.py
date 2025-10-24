@@ -262,6 +262,17 @@ class BayesianRidge(BaseModel):
     def predict(self, X):
         return self.model.predict(X)
 
+class ElasticNet(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = linear_model.ElasticNet(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+    
+    
 
 # ! Monkey Patch for M5
 def predict_from_leaves(m5p, X, smoothing=True, smoothing_constant=15):
