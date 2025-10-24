@@ -1,0 +1,13 @@
+# LARS
+hyperparameters:
+- name: fit_intercept
+  default_value: true
+  type: categorical
+  choices:
+    - true
+    - false
+- name: n_nonzero_coefs
+  default_value: 500
+  type: uniform_int
+  lower: 100
+  upper: 2000

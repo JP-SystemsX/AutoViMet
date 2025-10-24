@@ -271,6 +271,16 @@ class ElasticNet(BaseModel):
     
     def predict(self, X):
         return self.model.predict(X)
+
+class LARS(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = linear_model.Lars(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
     
     
 
