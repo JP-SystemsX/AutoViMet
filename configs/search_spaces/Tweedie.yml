@@ -1,0 +1,35 @@
+# Tweedie
+hyperparameters:
+- name: power
+  default_value: 0.0
+  type: categorical
+  choices:
+    - 0.0
+    - 1.0
+    - 1.5
+    - 2.0
+    - 3.0
+- name: alpha
+  default_value: 1.0
+  type: uniform_float
+  log: true
+  lower: 0.0000001
+  upper: 10
+- name: fit_intercept
+  default_value: true
+  type: categorical
+  choices:
+    - true
+    - false
+- name: solver
+  default_value: lbfgs
+  type: categorical
+  choices:
+    - lbfgs
+    - newton-cholesky
+- name: max_iter
+  default_value: 100
+  type: categorical
+  choices:
+    - 100
+    - 500

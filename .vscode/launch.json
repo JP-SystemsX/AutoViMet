@@ -26,10 +26,10 @@
             "program": "src/main.py",
             "console": "integratedTerminal",
             "args": [
-                "--model-name", "PassiveAggressive",
+                "--model-name", "Tweedie",
                 "--eval-config-adr", "configs/eval_configs/standard_eval.yml",
                 "--data-config-adr", "configs/data_configs/ctr23.yml",
-                "--search-space-adr", "configs/search_spaces/PassiveAggressive.yml",
+                "--search-space-adr", "configs/search_spaces/Tweedie.yml",
                 "--data-id", "0",
                 "--search-algo", "random"
             ]
