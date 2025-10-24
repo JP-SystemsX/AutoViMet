@@ -4,6 +4,7 @@ from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.datasets import make_friedman2
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel, RBF, Matern
 from sklearn.ensemble import AdaBoostRegressor
@@ -353,6 +354,26 @@ class AdaBoost(BaseModel):
     def __init__(self, estimator, **kwargs):
         estimator = getattr(sys.modules[__name__], estimator)()
         self.model = AdaBoostRegressor(estimator=estimator, **kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+
+class KNN(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = KNeighborsRegressor(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+    
+class SGD(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = linear_model.SGDRegressor(**kwargs)
     
     def train(self, X, y):
         self.model.fit(X, y)

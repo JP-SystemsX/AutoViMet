@@ -1,0 +1,18 @@
+# KNN
+hyperparameters:
+- name: n_neighbors
+  default_value: 5
+  type: uniform_int
+  lower: 1
+  upper: 100
+- name: weights
+  default_value: uniform
+  type: categorical
+  choices:
+    - uniform
+    - distance
+- name: p 
+  default_value: 2
+  type: uniform_int
+  lower: 1
+  upper: 5
