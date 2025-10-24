@@ -1,0 +1,54 @@
+# SGD
+hyperparameters:
+- name: loss
+  default_value: squared_error
+  type: categorical
+  choices:
+    - squared_error
+    - huber
+    - epsilon_insensitive
+    - squared_epsilon_insensitive
+- name: penalty
+  default_value: l2
+  type: categorical
+  choices:
+    - l1
+    - l2
+    - elasticnet
+- name: alpha
+  default_value: 0.0001
+  type: uniform_float
+  log: true
+  lower: 0.0000001
+  upper: 1.0
+- name: l1_ratio
+  default_value: 0.15
+  type: uniform_float
+  lower: 0.0
+  upper: 1.0
+- name: fit_intercept
+  default_value: true
+  type: categorical
+  choices:
+    - true
+    - false
+- name: learning_rate
+  default_value: invscaling
+  type: categorical
+  choices:
+    - constant
+    - optimal
+    - invscaling
+    - adaptive
+- name: eta0
+  default_value: 0.01
+  type: uniform_float
+  log: true
+  lower: 0.0001
+  upper: 1.0
+- name: max_iter
+  default_value: 1000
+  type: uniform_int
+  lower: 50
+  upper: 5000
+
