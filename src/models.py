@@ -281,6 +281,16 @@ class LARS(BaseModel):
     
     def predict(self, X):
         return self.model.predict(X)
+
+class LassoLars(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = linear_model.LassoLars(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
     
     
 
