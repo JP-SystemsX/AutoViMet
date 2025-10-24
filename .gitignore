@@ -8,3 +8,4 @@ hpc/logs/*
 hpc/logs_old/*
 hpc/venvs/*
 cache/
+*-journal

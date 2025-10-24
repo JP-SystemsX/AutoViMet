@@ -145,13 +145,9 @@ def hash_dict(d: dict) -> str:
     
     return hash_object.hexdigest()
 
-def store_complex_dict(d:dict, database_path: str | Path, table_name: str, cache=False, cache_id=None) -> str:
+def store_complex_dict(d:dict, database_path: str | Path, table_name: str) -> str:
     storable_dictionary = make_dict_storable(d)
     hash = hash_dict(storable_dictionary)
-    if isinstance(database_path, str):
-        database_path = Path(database_path)
-    if cache:
-        database_path =  (database_path.parent / f"{database_path.stem}") / f"{cache_id}.db"
 
     create_sqlite_table_from_dict(
         database_path=database_path,
@@ -435,8 +431,8 @@ def train(
     for metric_name, metric in metric_collection.items():
         results[metric_name] = metric(y_val, prediction)
 
-    # Write Results to DB (So parallel that they often block each other)
-    store_complex_dict(results, database_path="results.db", table_name="trials", cache=True, cache_id=search_id)
+    # Write Results to DB 
+    store_complex_dict(results, database_path="results.db", table_name="trials")
 
     preference_score = sum(results[metric] * weight for metric, weight in preferences.items())
 
@@ -449,25 +445,6 @@ def train(
         }
     }
 
-def move_cached_data_to_db(dst_db: Path, cache_id):
-    if isinstance(dst_db, str):
-        dst_db = Path(dst_db)
-    src_db =  (dst_db.parent / f"{dst_db.stem}") / f"{cache_id}.db" 
-    table = "trials"
-    with sqlite3.connect(dst_db) as dst, sqlite3.connect(src_db) as src:
-        src.row_factory = sqlite3.Row
-        rows = src.execute(f"SELECT * FROM {table}").fetchall()
-        if rows:
-            columns = rows[0].keys()
-            placeholders = ",".join(["?"] * len(columns))
-            colnames = ",".join(columns)
-            insert_sql = f"INSERT INTO {table} ({colnames}) VALUES ({placeholders})"
-            dst.executemany(insert_sql, [tuple(r) for r in rows])
-            print(f"✅ Inserted {len(rows)} rows from {src_db} into {dst_db}.")
-            # Delete
-            src_db.unlink()
-        else:
-            print("No rows to transfer.")
 
 def random_search(
         X_train: pd.DataFrame,
@@ -517,8 +494,6 @@ def random_search(
             )
         except Exception as e:
             warn(f"Config {config} failed, due to: {e}")
-    # read cache DB, move to main, then delete
-    move_cached_data_to_db(dst_db="results.db", cache_id=search_id)
 
     # Load Best Config
     conn = sqlite3.connect("results.db")

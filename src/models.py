@@ -23,6 +23,7 @@ import numpy as np
 from sklearn.tree import _tree
 from sklearn.tree._tree import DOUBLE
 import uuid
+from pathlib import Path
 
 
 
@@ -136,7 +137,9 @@ class LightGBM(BaseModel):
     
 class CatBoost(BaseModel):
     def __init__(self, **kwargs):
-        self.model = CatBoostRegressor(verbose=0, train_dir="./cache/catboost" + str(uuid.uuid4()), **kwargs) # This thing blocks itself if trained in parallel
+        train_dir = Path("./cache/catboost/" + str(uuid.uuid4()))
+        train_dir.mkdir(exist_ok=True, parents=True)
+        self.model = CatBoostRegressor(verbose=0, train_dir=train_dir, **kwargs) # This thing blocks itself if trained in parallel
     
     def train(self, X, y):
         cat_cols = X.select_dtypes(include=["category", "object"]).columns.tolist()
