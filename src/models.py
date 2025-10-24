@@ -291,6 +291,29 @@ class LassoLars(BaseModel):
     
     def predict(self, X):
         return self.model.predict(X)
+
+
+class Huber(BaseModel):
+    def __init__(self, **kwargs):
+        self.model = linear_model.HuberRegressor(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+    
+
+class DummyModel(BaseModel):
+    def __init__(self, **kwargs):
+        from sklearn.dummy import DummyRegressor
+        self.model = DummyRegressor(**kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
     
     
 
