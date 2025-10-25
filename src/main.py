@@ -42,6 +42,7 @@ def main(
     # Evaluate best Model (Time Series Cross Validation)
     data_loader = load_data(data_config_adr, id=data_id) 
     results = defaultdict(list)
+    i = 0
     for X_train, y_train, X_test, y_test in data_loader:
         # Repeat HPO for every split (only fair because AG can (or must) re-optimize as well)
         model = None
@@ -57,7 +58,8 @@ def main(
                     model_name=model_name,
                     n_trials=n_trials,
                     preferences=preferences,
-                    data_id=data_id
+                    data_id=data_id,
+                    fold=i
                 )
             case "automl":
                 model, search_id, best_config= automl_search(
@@ -78,6 +80,7 @@ def main(
                     n_trials=n_trials,
                     preferences=preferences,
                     data_id=data_id,
+                    fold=i,
                     n_workers=4, #TODO make accesible via CLI
                     mode="DEHB"
                 )
@@ -92,11 +95,13 @@ def main(
                     n_trials=n_trials,
                     preferences=preferences,
                     data_id=data_id,
+                    fold=i,
                     n_workers=4, #TODO make accesible via CLI
                     mode="DE"
                 )
             case _:
                 raise NotImplementedError(f"Search Algorithm {search_algo} not implemented.")
+        i += 1
         search_duration = time.time() - search_start
         results["search_durations"].append(search_duration)
         if model is None:

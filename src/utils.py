@@ -22,16 +22,31 @@ import metrics as metrics
 import time
 import pandas as pd
 from autogluon.features.generators import AutoMLPipelineFeatureGenerator
+from sklearn.feature_extraction.text import CountVectorizer
 import auto_models 
 from math import inf
 import pickle
 from functools import cache, partial
+from ConfigSpace import Categorical, Float, Integer, Constant
 
 
 
 def get_configspace(path: str | Path) -> ConfigSpace.ConfigurationSpace:
     """Load a ConfigSpace from a given file path."""
-    return ConfigSpace.ConfigurationSpace.from_yaml(path)
+    cs = ConfigSpace.ConfigurationSpace.from_yaml(path)
+
+    # Preprocessing Search Space
+    cs.add(Constant("enable_numeric_features", value=True))
+    cs.add(Categorical("enable_categorical_features", [True, False],default=True))
+    cs.add(Categorical("enable_datetime_features", [True, False],default=True))
+    cs.add(Categorical("enable_text_special_features", [True, False],default=True))
+    cs.add(Categorical("enable_text_ngram_features", [True, False],default=True))
+    cs.add(Categorical("enable_raw_text_features", [True, False],default=False))
+    cs.add(Categorical("prepro_analyzer", ["word", "char", "char_wb"], default="word"))
+    cs.add(Float("prepro_min_df", (0.005, 1.0), log=True, default=0.2))
+    cs.add(Integer("prepro_max_features", (5, 20000), log=True, default=10000))
+
+    return cs
 
 
 @cache
@@ -321,6 +336,7 @@ def dehb_search(
         n_trials: int, 
         preferences: dict,
         data_id: int = None,
+        fold: int = 0,
         n_workers=4, #TODO send through
         mode = "DEHB" #or 'DE'
         ):
@@ -330,12 +346,6 @@ def dehb_search(
     validation_split = len(y_train) // 10
     X_val_, y_val_ = X_train[-validation_split:], y_train[-validation_split:]
     X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
-
-    # preprocess dataset
-    feature_generator = AutoMLPipelineFeatureGenerator()
-    X_train_ = feature_generator.fit_transform(X=X_train_, y=y_train_)
-    X_val_ = feature_generator.transform(X_val_)
-
 
     # Optimize Model
     search_space_hash = archive_config("results.db", config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name}) # Regenerate
@@ -363,10 +373,11 @@ def dehb_search(
             search_space_hash=search_space_hash,
             data_config_hash=data_config_hash,
             data_id=data_id,
+            fold=fold,
             preferences=preferences,
         ),
         cs=cs, 
-        dimensions=len(cs.get_hyperparameters()), 
+        dimensions=len(list(cs.values())), 
         min_fidelity=0.005, # Exact number is irrelevant just used to compute how many steps fit between lowest and highest fidelity
         max_fidelity=1,
         eta=4.64158883361, # Three steps from 1% to 100%
@@ -398,17 +409,40 @@ def train(
         search_space_hash: str,
         data_config_hash: str,
         data_id: int,
+        fold: int,
         preferences: dict,
 ):
-    X_train = deepcopy(X_train_)
+    config = dict(config)
+    config_ = deepcopy(config)
+    # preprocess dataset
+    vectorizer = CountVectorizer( # only when enable_text_ngram_features
+            min_df=config.pop("prepro_min_df", 0.2),
+            ngram_range=(1, 3), # Uni, Bi, and Tri-grams
+            max_features=config.pop("prepro_max_features", 10000), 
+            dtype=np.uint8, 
+            analyzer=config.pop("prepro_analyzer", "word") 
+    )
+    feature_generator = AutoMLPipelineFeatureGenerator(
+        enable_numeric_features=config.pop("enable_numeric_features", True), # This always true
+        enable_categorical_features=config.pop("enable_categorical_features", True),
+        enable_datetime_features=config.pop("enable_datetime_features", True),
+        enable_text_special_features=config.pop("enable_text_special_features", True),
+        enable_text_ngram_features=config.pop("enable_text_ngram_features", True),
+        enable_raw_text_features=config.pop("enable_raw_text_features", False),
+        vectorizer=vectorizer,
+    )
+    X_train = feature_generator.fit_transform(X=X_train_, y=y_train_)
+    X_val = feature_generator.transform(X_val_)
+
+    # Make copy to avoid operating in place
     y_train = deepcopy(y_train_)
-    X_val = deepcopy(X_val_)
     y_val = deepcopy(y_val_)
+
     if fidelity < 1.0:
         idx = X_train.sample(frac=fidelity, random_state=123).index
         y_train = y_train.loc[idx]
         X_train = X_train.loc[idx]
-    model = getattr(models, model_name)(**dict(config))
+    model = getattr(models, model_name)(**config)
     start = time.time()
     model.train(X_train, y_train)
     train_duration = time.time() - start
@@ -422,7 +456,9 @@ def train(
         "search_space_hash": search_space_hash,
         "data_config_hash": data_config_hash,
         "data_id": data_id,
-        "config": dict(config),
+        "fold": fold,
+        "fidelity": fidelity,
+        "config": config_,
         "train_duration": train_duration,
         "inference_duration": inference_duration,
         "timestamp": time.time(),
@@ -455,7 +491,8 @@ def random_search(
         model_name: str, 
         n_trials: int, 
         preferences: dict,
-        data_id: int = None
+        data_id: int = None,
+        fold: int = 0
         ):
     assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
     # Split Data into Train and Validation
@@ -463,10 +500,10 @@ def random_search(
     X_val_, y_val_ = X_train[-validation_split:], y_train[-validation_split:]
     X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
 
-    # preprocess dataset
-    feature_generator = AutoMLPipelineFeatureGenerator()
-    X_train_ = feature_generator.fit_transform(X=X_train_, y=y_train_)
-    X_val_ = feature_generator.transform(X_val_)
+    # # preprocess dataset
+    # feature_generator = AutoMLPipelineFeatureGenerator()
+    # X_train_ = feature_generator.fit_transform(X=X_train_, y=y_train_)
+    # X_val_ = feature_generator.transform(X_val_)
 
 
     # Optimize Model
@@ -490,6 +527,7 @@ def random_search(
                 search_space_hash=search_space_hash,
                 data_config_hash=data_config_hash,
                 data_id=data_id,
+                fold=fold,
                 preferences=preferences
             )
         except Exception as e:
