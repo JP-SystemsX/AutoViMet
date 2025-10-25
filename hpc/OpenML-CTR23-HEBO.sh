@@ -7,7 +7,7 @@
 #SBATCH --job-name=ctr23
 #SBATCH --output=hpc/logs/ctr23-%j-%a.out  # Output Address 
 #SBATCH --error=hpc/logs/ctr23-%j-%a.err  # Output Address
-#SBATCH --array=0-1225%50 #35 datasets * (29 Single Models + 6 AutoGluon Configs)  
+#SBATCH --array=0-1224%50 #35 datasets * (29 Single Models + 6 AutoGluon Configs)  
 # Load all Modules
 
 # Prepare file list
