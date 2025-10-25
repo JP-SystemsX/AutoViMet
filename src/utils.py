@@ -392,13 +392,14 @@ def dehb_search(
         )
     elif mode == "DE":
         trajectory, runtime, history = optimizer.run(
-            generations=n_trials // (optimizer.pop_size), # TODO -1?
+            generations=max((n_trials // optimizer.pop_size)-1, 1), 
             fidelity=1.0,
         )
 
     best_config = optimizer.vector_to_configspace(optimizer.inc_config)
     best_config = dict(best_config)
     print("Best Config found:", best_config)    
+
 
     return best_config, search_id
 
