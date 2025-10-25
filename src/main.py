@@ -5,6 +5,7 @@ from utils import (
     archive_config,
     random_search,
     automl_search,
+    hebo_search,
     dehb_search,
     get_preprocessor
     )
@@ -100,6 +101,19 @@ def main(
                     n_workers=4, #TODO make accesible via CLI
                     mode="DE"
                 )
+            case "HEBO":
+                best_config, search_id = hebo_search(
+                    X_train=X_train,
+                    y_train=y_train,
+                    search_space_adr=search_space_adr,
+                    data_config_hash=data_config_hash,
+                    metric_collection=metric_collection,
+                    model_name=model_name,
+                    n_trials=n_trials,
+                    preferences=preferences,
+                    data_id=data_id,
+                    fold=i
+                )
             case _:
                 raise NotImplementedError(f"Search Algorithm {search_algo} not implemented.")
         i += 1
@@ -109,7 +123,7 @@ def main(
             # preprocess dataset
             feature_generator = get_preprocessor(best_config)
             model = getattr(models, model_name)(**best_config)
-            
+
             X_train = feature_generator.fit_transform(X=X_train, y=y_train)
             X_test = feature_generator.transform(X_test)
             # Train Model on full train set

@@ -1,4 +1,4 @@
-n_trials: 500 # 1000 when random
+n_trials: 1000
 metrics:
   - mean_absolute_error
   - mean_squared_error

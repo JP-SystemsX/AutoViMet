@@ -8,6 +8,7 @@ tabpfn
 m5py
 cubist
 dehb
+hebo
 numpy==1.18
 torch==2.5.1
 torchvision==0.20.1

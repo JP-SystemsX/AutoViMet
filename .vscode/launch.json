@@ -31,7 +31,7 @@
                 "--data-config-adr", "configs/data_configs/ctr23.yml",
                 "--search-space-adr", "configs/search_spaces/Lasso.yml",
                 "--data-id", "0",
-                "--search-algo", "DE"
+                "--search-algo", "HEBO"
             ]
         }
     ]

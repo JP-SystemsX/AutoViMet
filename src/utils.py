@@ -27,7 +27,15 @@ import auto_models
 from math import inf
 import pickle
 from functools import cache, partial
-from ConfigSpace import Categorical, Float, Integer, Constant
+from ConfigSpace import (
+    Categorical, 
+    Float, 
+    Integer, 
+    Constant, 
+    UniformFloatHyperparameter, 
+    UniformIntegerHyperparameter, 
+    CategoricalHyperparameter
+)
 
 
 
@@ -36,7 +44,7 @@ def get_configspace(path: str | Path) -> ConfigSpace.ConfigurationSpace:
     cs = ConfigSpace.ConfigurationSpace.from_yaml(path)
 
     # Preprocessing Search Space
-    cs.add(Constant("enable_numeric_features", value=True))
+    # cs.add(Constant("enable_numeric_features", value=True))
     cs.add(Categorical("enable_categorical_features", [True, False],default=True))
     cs.add(Categorical("enable_datetime_features", [True, False],default=True))
     cs.add(Categorical("enable_text_special_features", [True, False],default=True))
@@ -325,6 +333,83 @@ def archive_config(database_path: Path, config_path: Path, table_name: str, extr
     ) 
     return config_hash
 
+# =========== #
+# HPO Methods #
+# =========== #
+
+
+def train(
+        config: Configuration,
+        fidelity: float,
+        X_train_: pd.DataFrame,
+        y_train_: pd.Series,
+        X_val_: pd.DataFrame,
+        y_val_: pd.Series,
+        metric_collection: dict,
+        model_name: str,
+        search_id: str,
+        search_space_hash: str,
+        data_config_hash: str,
+        data_id: int,
+        fold: int,
+        preferences: dict,
+):
+    config = dict(config)
+    config_ = deepcopy(config)
+
+    # Setup Preprocessor + Remove related HPs from config
+    feature_generator = get_preprocessor(config)
+    
+    X_train = feature_generator.fit_transform(X=X_train_, y=y_train_)
+    X_val = feature_generator.transform(X_val_)
+
+    # Make copy to avoid operating in place
+    y_train = deepcopy(y_train_)
+    y_val = deepcopy(y_val_)
+
+    if fidelity < 1.0:
+        idx = X_train.sample(frac=fidelity, random_state=123).index
+        y_train = y_train.loc[idx]
+        X_train = X_train.loc[idx]
+    model = getattr(models, model_name)(**config)
+    start = time.time()
+    model.train(X_train, y_train)
+    train_duration = time.time() - start
+    # Evaluate Model
+    start = time.time()
+    prediction = model.predict(X_val)
+    inference_duration = ((time.time() - start) / len(y_val)) * 1000  
+    results = {
+        "model": str(model_name),
+        "search_id": search_id,
+        "search_space_hash": search_space_hash,
+        "data_config_hash": data_config_hash,
+        "data_id": data_id,
+        "fold": fold,
+        "fidelity": fidelity,
+        "config": config_,
+        "train_duration": train_duration,
+        "inference_duration": inference_duration,
+        "timestamp": time.time(),
+        **get_hardware_resources()
+    }
+    for metric_name, metric in metric_collection.items():
+        results[metric_name] = metric(y_val, prediction)
+
+    # Write Results to DB 
+    store_complex_dict(results, database_path="results.db", table_name="trials")
+
+    preference_score = sum(results[metric] * weight for metric, weight in preferences.items())
+
+    return {
+        "fitness": preference_score,  # DE/DEHB minimizes
+        "cost": train_duration+inference_duration,
+        "info": {
+            "test_score": str(results),
+            "fidelity": fidelity
+        }
+    }
+
 
 def dehb_search(
         X_train: pd.DataFrame,
@@ -413,7 +498,7 @@ def get_preprocessor(config: dict):
             analyzer=config.pop("prepro_analyzer", "word") 
     )
     feature_generator = AutoMLPipelineFeatureGenerator(
-        enable_numeric_features=config.pop("enable_numeric_features", True), # This always true
+        enable_numeric_features=True, # config.pop("enable_numeric_features", True), # This always true
         enable_categorical_features=config.pop("enable_categorical_features", True),
         enable_datetime_features=config.pop("enable_datetime_features", True),
         enable_text_special_features=config.pop("enable_text_special_features", True),
@@ -423,77 +508,96 @@ def get_preprocessor(config: dict):
     )
     return feature_generator
 
-def train(
-        config: Configuration,
-        fidelity: float,
-        X_train_: pd.DataFrame,
-        y_train_: pd.Series,
-        X_val_: pd.DataFrame,
-        y_val_: pd.Series,
+
+def hebo_search(
+        X_train: pd.DataFrame,
+        y_train: pd.Series,
+        search_space_adr: str, 
+        data_config_hash: str, 
         metric_collection: dict,
-        model_name: str,
-        search_id: str,
-        search_space_hash: str,
-        data_config_hash: str,
-        data_id: int,
-        fold: int,
+        model_name: str, 
+        n_trials: int, 
         preferences: dict,
-):
-    config = dict(config)
-    config_ = deepcopy(config)
+        data_id: int = None,
+        fold: int = 0,
+        ):
+    from hebo.design_space.design_space import DesignSpace
+    from hebo.optimizers.hebo import HEBO
+    def to_design_space(cs: ConfigSpace.ConfigurationSpace) -> DesignSpace:
+        # Convert manually to HEBO space
+        params = []
+        for hp in list(cs.values()):
+            if isinstance(hp, UniformFloatHyperparameter):
+                params.append({'name': hp.name, 'type': 'num', 'lb': hp.lower, 'ub': hp.upper})
+            elif isinstance(hp, UniformIntegerHyperparameter):
+                params.append({'name': hp.name, 'type': 'int', 'lb': hp.lower, 'ub': hp.upper})
+            elif isinstance(hp, CategoricalHyperparameter):
+                params.append({'name': hp.name, 'type': 'cat', 'categories': hp.choices})
 
-    # Setup Preprocessor + Remove related HPs from config
-    feature_generator = get_preprocessor(config)
-    
-    X_train = feature_generator.fit_transform(X=X_train_, y=y_train_)
-    X_val = feature_generator.transform(X_val_)
+        space = DesignSpace().parse(params)
+        return space
 
-    # Make copy to avoid operating in place
-    y_train = deepcopy(y_train_)
-    y_val = deepcopy(y_val_)
+    assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
+    # Split Data into Train and Validation
+    validation_split = len(y_train) // 10
+    X_val_, y_val_ = X_train[-validation_split:], y_train[-validation_split:]
+    X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
 
-    if fidelity < 1.0:
-        idx = X_train.sample(frac=fidelity, random_state=123).index
-        y_train = y_train.loc[idx]
-        X_train = X_train.loc[idx]
-    model = getattr(models, model_name)(**config)
-    start = time.time()
-    model.train(X_train, y_train)
-    train_duration = time.time() - start
-    # Evaluate Model
-    start = time.time()
-    prediction = model.predict(X_val)
-    inference_duration = ((time.time() - start) / len(y_val)) * 1000  
-    results = {
-        "model": str(model_name),
-        "search_id": search_id,
-        "search_space_hash": search_space_hash,
-        "data_config_hash": data_config_hash,
-        "data_id": data_id,
-        "fold": fold,
-        "fidelity": fidelity,
-        "config": config_,
-        "train_duration": train_duration,
-        "inference_duration": inference_duration,
-        "timestamp": time.time(),
-        **get_hardware_resources()
-    }
-    for metric_name, metric in metric_collection.items():
-        results[metric_name] = metric(y_val, prediction)
+    # Optimize Model
+    search_space_hash = archive_config("results.db", config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name}) # Regenerate
+    cs = get_configspace(search_space_adr)
+    space = to_design_space(cs)
+    opt   = HEBO(space)
 
-    # Write Results to DB 
-    store_complex_dict(results, database_path="results.db", table_name="trials")
+    search_id = str(uuid.uuid4())               
+    print(f"Evaluating {n_trials} configurations for model {model_name} on data config {data_config_hash}.")
+    step_size = 32
+    for i in tqdm(range((n_trials+step_size-1)//step_size)):
+        configs = opt.suggest(n_suggestions=step_size)
+        fittnesses = []
+        for config in configs.to_dict(orient="records"):
+            try:
+                results = train(
+                    config=config,
+                    fidelity=1.0,
+                    X_train_=X_train_,
+                    y_train_=y_train_,
+                    X_val_=X_val_,
+                    y_val_=y_val_,
+                    metric_collection=metric_collection,
+                    model_name=model_name,
+                    search_id=search_id,
+                    search_space_hash=search_space_hash,
+                    data_config_hash=data_config_hash,
+                    data_id=data_id,
+                    fold=fold,
+                    preferences=preferences
+                )
+                fittnesses.append(results["fitness"])
+            except Exception as e:
+                warn(f"Config {config} failed, due to: {e}")
+                fittnesses.append(inf)
+        opt.observe(configs, np.array(fittnesses))
 
-    preference_score = sum(results[metric] * weight for metric, weight in preferences.items())
+    # Load Best Config
+    conn = sqlite3.connect("results.db")
+    results = pd.read_sql(
+        "SELECT * FROM trials where search_space_hash = ? and search_id = ? and data_config_hash = ? and data_id = ?", 
+        conn, 
+        params=(search_space_hash, search_id, data_config_hash, data_id)
+        )
+    conn.close()
+    # assert len(results) == n_trials, f"Expected {n_trials} results but got {len(results)}. Something went wrong during the evaluation."
+    results["preference_score"] = sum(results[metric] * weight for metric, weight in preferences.items())
+    incumbent = results.sort_values("preference_score", ascending=True).iloc[0]
+    best_config = yaml.safe_load(incumbent["config"])
+    # Type Cast back to original (e.g. we store bools as int two typecasts required to cast it back to original)
+    best_config = Configuration(cs, values=best_config)
+    best_config = Configuration(cs, vector=best_config._vector)
+    best_config = dict(best_config)
+    print("Best Config found:", best_config)    
 
-    return {
-        "fitness": preference_score,  # DE/DEHB minimizes
-        "cost": train_duration+inference_duration,
-        "info": {
-            "test_score": str(results),
-            "fidelity": fidelity
-        }
-    }
+    return best_config, search_id
 
 
 def random_search(
@@ -513,12 +617,6 @@ def random_search(
     validation_split = len(y_train) // 10
     X_val_, y_val_ = X_train[-validation_split:], y_train[-validation_split:]
     X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
-
-    # # preprocess dataset
-    # feature_generator = AutoMLPipelineFeatureGenerator()
-    # X_train_ = feature_generator.fit_transform(X=X_train_, y=y_train_)
-    # X_val_ = feature_generator.transform(X_val_)
-
 
     # Optimize Model
     search_space_hash = archive_config("results.db", config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name}) # Regenerate
