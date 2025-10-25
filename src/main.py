@@ -5,7 +5,8 @@ from utils import (
     archive_config,
     random_search,
     automl_search,
-    dehb_search
+    dehb_search,
+    get_preprocessor
     )
 from autogluon.features.generators import AutoMLPipelineFeatureGenerator
 import models
@@ -105,9 +106,10 @@ def main(
         search_duration = time.time() - search_start
         results["search_durations"].append(search_duration)
         if model is None:
-            model = getattr(models, model_name)(**best_config)
             # preprocess dataset
-            feature_generator = AutoMLPipelineFeatureGenerator()
+            feature_generator = get_preprocessor(best_config)
+            model = getattr(models, model_name)(**best_config)
+            
             X_train = feature_generator.fit_transform(X=X_train, y=y_train)
             X_test = feature_generator.transform(X_test)
             # Train Model on full train set

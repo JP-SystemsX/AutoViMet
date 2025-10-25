@@ -394,7 +394,25 @@ def dehb_search(
 
     return best_config, search_id
 
-
+def get_preprocessor(config: dict):
+    # preprocess dataset
+    vectorizer = CountVectorizer( # only when enable_text_ngram_features
+            min_df=config.pop("prepro_min_df", 0.2),
+            ngram_range=(1, 3), # Uni, Bi, and Tri-grams
+            max_features=config.pop("prepro_max_features", 10000), 
+            dtype=np.uint8, 
+            analyzer=config.pop("prepro_analyzer", "word") 
+    )
+    feature_generator = AutoMLPipelineFeatureGenerator(
+        enable_numeric_features=config.pop("enable_numeric_features", True), # This always true
+        enable_categorical_features=config.pop("enable_categorical_features", True),
+        enable_datetime_features=config.pop("enable_datetime_features", True),
+        enable_text_special_features=config.pop("enable_text_special_features", True),
+        enable_text_ngram_features=config.pop("enable_text_ngram_features", True),
+        enable_raw_text_features=config.pop("enable_raw_text_features", False),
+        vectorizer=vectorizer,
+    )
+    return feature_generator
 
 def train(
         config: Configuration,
@@ -414,23 +432,10 @@ def train(
 ):
     config = dict(config)
     config_ = deepcopy(config)
-    # preprocess dataset
-    vectorizer = CountVectorizer( # only when enable_text_ngram_features
-            min_df=config.pop("prepro_min_df", 0.2),
-            ngram_range=(1, 3), # Uni, Bi, and Tri-grams
-            max_features=config.pop("prepro_max_features", 10000), 
-            dtype=np.uint8, 
-            analyzer=config.pop("prepro_analyzer", "word") 
-    )
-    feature_generator = AutoMLPipelineFeatureGenerator(
-        enable_numeric_features=config.pop("enable_numeric_features", True), # This always true
-        enable_categorical_features=config.pop("enable_categorical_features", True),
-        enable_datetime_features=config.pop("enable_datetime_features", True),
-        enable_text_special_features=config.pop("enable_text_special_features", True),
-        enable_text_ngram_features=config.pop("enable_text_ngram_features", True),
-        enable_raw_text_features=config.pop("enable_raw_text_features", False),
-        vectorizer=vectorizer,
-    )
+
+    # Setup Preprocessor + Remove related HPs from config
+    feature_generator = get_preprocessor(config)
+    
     X_train = feature_generator.fit_transform(X=X_train_, y=y_train_)
     X_val = feature_generator.transform(X_val_)
 
