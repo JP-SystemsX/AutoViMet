@@ -26,7 +26,7 @@ if [[ $FILE == configs/search_spaces/* ]]; then
     FOLDER="single_model"
     BASENAME=$(basename "$FILE")
     MODEL_NAME="${BASENAME%.*}"
-    SEARCH_ALGO="random"
+    SEARCH_ALGO="HEBO"
 elif [[ $FILE == configs/automl_configs/* ]]; then
     FOLDER="automl"
     MODEL_NAME="AutoGluon"
@@ -34,4 +34,4 @@ elif [[ $FILE == configs/automl_configs/* ]]; then
 fi
 
 source ./hpc/modules.sh
-srun python3 ./src/main.py --model-name "$MODEL_NAME" --eval-config-adr "configs/eval_configs/random_eval.yml" --data-config-adr "configs/data_configs/ctr23.yml" --search-space-adr "$FILE" --data-id "$DATA_ID" --search-algo "$SEARCH_ALGO"
+srun python3 ./src/main.py --model-name "$MODEL_NAME" --eval-config-adr "configs/eval_configs/standard_eval.yml" --data-config-adr "configs/data_configs/ctr23.yml" --search-space-adr "$FILE" --data-id "$DATA_ID" --search-algo "$SEARCH_ALGO"
