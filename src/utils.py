@@ -382,11 +382,19 @@ def dehb_search(
         max_fidelity=1,
         eta=4.64158883361, # Three steps from 1% to 100%
         n_workers=n_workers,
+        mutation_factor=0.5,
+        crossover_prob=0.5,
         )
-    trajectory, runtime, history = optimizer.run(
-        feval=n_trials,
-        seed=123,
-    )
+    if mode == "DEHB":
+        trajectory, runtime, history = optimizer.run(
+            fevals=n_trials,
+            seed=123,
+        )
+    elif mode == "DE":
+        trajectory, runtime, history = optimizer.run(
+            generations=n_trials // (optimizer.pop_size), # TODO -1?
+            fidelity=1.0,
+        )
 
     best_config = optimizer.vector_to_configspace(optimizer.inc_config)
     best_config = dict(best_config)
