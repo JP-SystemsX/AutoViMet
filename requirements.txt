@@ -4,14 +4,16 @@ scikit-learn
 openml
 typer
 typer-config
-tabpfn
 m5py
 cubist
 dehb
-hebo
-pymoo==0.5.0
-numpy #==1.18
-torch==2.5.1
-torchvision==0.20.1
-torchaudio==2.5.1
---extra-index-url https://download.pytorch.org/whl/cu121
+hebo==0.3.6
+pymoo #==0.5.0
+numpy # in case of  No module named 'numpy._core' --> Delete OpenML Cache but theirs not our custom
+
+# GPU only (experimental):
+# tabpfn
+# torch==2.5.1
+# torchvision==0.20.1
+# torchaudio==2.5.1
+# --extra-index-url https://download.pytorch.org/whl/cu121

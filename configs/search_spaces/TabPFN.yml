@@ -1,6 +1,0 @@
-hyperparameters:
-- name: n_estimators
-  default_value: 8
-  type: uniform_int
-  lower: 1
-  upper: 50

@@ -1,0 +1,43 @@
+Modules GCCcore/13.2.0, Python/3.11.5 and 10 dependencies loaded.
+Traceback (most recent call last):
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/./src/main.py", line 159, in <module>
+    app()
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/hpc/venvs/venv/lib/python3.11/site-packages/typer/main.py", line 327, in __call__
+    raise e
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/hpc/venvs/venv/lib/python3.11/site-packages/typer/main.py", line 310, in __call__
+    return get_command(self)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/hpc/venvs/venv/lib/python3.11/site-packages/click/core.py", line 1462, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/hpc/venvs/venv/lib/python3.11/site-packages/typer/core.py", line 719, in main
+    return _main(
+           ^^^^^^
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/hpc/venvs/venv/lib/python3.11/site-packages/typer/core.py", line 192, in _main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/hpc/venvs/venv/lib/python3.11/site-packages/click/core.py", line 1246, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/hpc/venvs/venv/lib/python3.11/site-packages/click/core.py", line 814, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/hpc/venvs/venv/lib/python3.11/site-packages/typer/main.py", line 691, in wrapper
+    return callback(**use_params)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/./src/main.py", line 48, in main
+    for X_train, y_train, X_test, y_test in data_loader:
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/src/utils.py", line 104, in load_data
+    repeats, folds, samples = task.get_split_dimensions()
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/hpc/venvs/venv/lib/python3.11/site-packages/openml/tasks/task.py", line 199, in get_split_dimensions
+    self.split = self.download_split()
+                 ^^^^^^^^^^^^^^^^^^^^^
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/hpc/venvs/venv/lib/python3.11/site-packages/openml/tasks/task.py", line 188, in download_split
+    split = OpenMLSplit._from_arff_file(cached_split_file)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/horse/ws/jipo020b-HPOBench/AutoViMet/hpc/venvs/venv/lib/python3.11/site-packages/openml/tasks/split.py", line 96, in _from_arff_file
+    _split = pickle.load(fh)  # noqa: S301
+             ^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'numpy._core'
+srun: error: n1404: task 0: Exited with exit code 1

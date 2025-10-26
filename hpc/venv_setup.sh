@@ -4,7 +4,7 @@
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd ..
 
-module load release/25.06  GCCcore/13.3.0  Python/3.12.3
+module load release/24.04  GCCcore/13.2.0  Python/3.11.5
 python3 -m venv --system-site-package ./hpc/venvs/venv
 source ./hpc/venvs/venv/bin/activate
 pip install -r requirements.txt

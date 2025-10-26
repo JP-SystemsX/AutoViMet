@@ -63,28 +63,29 @@ def get_dataset(data_id: int, id: int):
     cache = Path("./cache")
     cache.mkdir(exist_ok=True, parents=True)
     suite_cache = Path(f"./cache/{data_id}.pkl")
-    if suite_cache.exists():
+    # if suite_cache.exists():
+    try:
         with open(suite_cache, "rb") as f:
             suite = pickle.load(f)
-    else: 
+    except: # To catch none exist AND version change
         suite = openml.study.get_suite(data_id)  # Get a curated list of tasks for classification
         with open(suite_cache, "wb") as f:
             pickle.dump(suite, f)
     task_id = suite.tasks[id]
     task_cache = Path(f"./cache/{data_id}_{task_id}.pkl")
-    if task_cache.exists():
+    try:
         with open(task_cache, "rb") as f:
             task = pickle.load(f)
-    else:
-        task = openml.tasks.get_task(task_id)
+    except:
+        task = openml.tasks.get_task(task_id, download_splits=True)
         with open(task_cache, "wb") as f:
             pickle.dump(task, f)
     ds_cache = Path(f"./cache/{data_id}_{task_id}_ds.pkl")
-    if ds_cache.exists():
+    try:
         with open(ds_cache, "rb") as f:
             dataset = pickle.load(f)
-    else:
-        dataset = task.get_dataset()
+    except:
+        dataset = task.get_dataset(force_refresh_cache=True)
         with open(ds_cache, "wb") as f:
             pickle.dump(dataset, f)
     return dataset, task
