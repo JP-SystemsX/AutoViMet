@@ -36,6 +36,7 @@ from ConfigSpace import (
     UniformIntegerHyperparameter, 
     CategoricalHyperparameter
 )
+from autogluon.features.generators import PipelineFeatureGenerator, FillNaFeatureGenerator
 
 
 
@@ -50,6 +51,7 @@ def get_configspace(path: str | Path) -> ConfigSpace.ConfigurationSpace:
     cs.add(Categorical("enable_text_special_features", [True, False],default=True))
     cs.add(Categorical("enable_text_ngram_features", [True, False],default=True))
     cs.add(Categorical("enable_raw_text_features", [True, False],default=False))
+    cs.add(Categorical("allow_nans", [True, False],default=False))
     cs.add(Categorical("prepro_analyzer", ["word", "char", "char_wb"], default="word"))
     cs.add(Float("prepro_min_df", (0.005, 1.0), log=True, default=0.2))
     cs.add(Integer("prepro_max_features", (5, 20000), log=True, default=10000))
@@ -489,26 +491,6 @@ def dehb_search(
 
     return best_config, search_id
 
-def get_preprocessor(config: dict):
-    # preprocess dataset
-    vectorizer = CountVectorizer( # only when enable_text_ngram_features
-            min_df=config.pop("prepro_min_df", 0.2),
-            ngram_range=(1, 3), # Uni, Bi, and Tri-grams
-            max_features=config.pop("prepro_max_features", 10000), 
-            dtype=np.uint8, 
-            analyzer=config.pop("prepro_analyzer", "word") 
-    )
-    feature_generator = AutoMLPipelineFeatureGenerator(
-        enable_numeric_features=True, # config.pop("enable_numeric_features", True), # This always true
-        enable_categorical_features=config.pop("enable_categorical_features", True),
-        enable_datetime_features=config.pop("enable_datetime_features", True),
-        enable_text_special_features=config.pop("enable_text_special_features", True),
-        enable_text_ngram_features=config.pop("enable_text_ngram_features", True),
-        enable_raw_text_features=config.pop("enable_raw_text_features", False),
-        vectorizer=vectorizer,
-    )
-    return feature_generator
-
 
 def hebo_search(
         X_train: pd.DataFrame,
@@ -687,3 +669,73 @@ def automl_search(
 
     info = model.info()
     return model, search_id, make_dict_storable(info)
+
+
+# ============= #
+# Preprocessing #
+# ============= #
+
+class AdvancedFillNaFeatureGenerator(FillNaFeatureGenerator):
+
+    def __init__(self, fillna_map: dict):
+        super().__init__(fillna_map=fillna_map)
+
+    def _fit_transform(self, X: pd.DataFrame, **kwargs) :
+        features = self.feature_metadata_in.get_features()
+        self._fillna_feature_map = {}
+
+        for feature in features:
+            feature_raw_type = self.feature_metadata_in.get_feature_type_raw(feature)
+            feature_fillna_val = self.fillna_map.get(feature_raw_type, self.fillna_default)
+
+            if isinstance(feature_fillna_val, str):
+                col = X[feature]
+                if feature_fillna_val == "mean" and np.issubdtype(col.dtype, np.number):
+                    feature_fillna_val = col.mean()
+                elif feature_fillna_val == "median" and np.issubdtype(col.dtype, np.number):
+                    feature_fillna_val = col.median()
+                elif feature_fillna_val in {"mode", "most"}:
+                    feature_fillna_val = col.mode(dropna=True).iloc[0] if not col.mode(dropna=True).empty else np.nan
+
+            if feature_fillna_val is not np.nan:
+                self._fillna_feature_map[feature] = feature_fillna_val
+
+        return self._transform(X), self.feature_metadata_in.type_group_map_special
+
+
+def get_preprocessor(config: dict):
+    # preprocess dataset
+    vectorizer = CountVectorizer( # only when enable_text_ngram_features
+            min_df=config.pop("prepro_min_df", 0.2),
+            ngram_range=(1, 3), # Uni, Bi, and Tri-grams
+            max_features=config.pop("prepro_max_features", 10000), 
+            dtype=np.uint8, 
+            analyzer=config.pop("prepro_analyzer", "word") 
+    )
+
+    if config.pop("allow_nans", False):
+        imputer = None
+    else:
+        imputer = AdvancedFillNaFeatureGenerator(
+                                            fillna_map={
+                                                "int": "median",
+                                                "float": "mean",
+                                                "category": "most",
+                                                "object": "mode",
+                                                "datetime": pd.Timestamp("1970-01-01"),
+                                            }
+                                        )
+
+    feature_generator = AutoMLPipelineFeatureGenerator(
+        enable_numeric_features=True, # config.pop("enable_numeric_features", True), # This always true
+        enable_categorical_features=config.pop("enable_categorical_features", True),
+        enable_datetime_features=config.pop("enable_datetime_features", True),
+        enable_text_special_features=config.pop("enable_text_special_features", True),
+        enable_text_ngram_features=config.pop("enable_text_ngram_features", True),
+        enable_raw_text_features=config.pop("enable_raw_text_features", False),
+        vectorizer=vectorizer,
+        post_generators=imputer,
+    )
+
+
+    return feature_generator
