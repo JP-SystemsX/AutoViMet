@@ -25,7 +25,7 @@ class AutoGluon(AutoModel):
     def train(self, X, y):
         X["label"] = y
         df = TabularDataset(X)
-        self.model.fit(df, **self.fit_kwargs)
+        self.model.fit(df, num_cpus=4, num_gpus=0, **self.fit_kwargs)
 
     def predict(self, X):
         df = TabularDataset(X)
