@@ -5,8 +5,6 @@ hyperparameters:
   type: categorical
   choices:
   - "DecisionTreeRegressor"
-  - "SVR"
-  - "KNeighborsRegressor"
   - "Ridge"
 # - name: n_estimators
 #   default_value: 50
