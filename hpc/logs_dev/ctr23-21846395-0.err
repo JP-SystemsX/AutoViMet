@@ -1,5 +1,0 @@
-Modules GCCcore/13.2.0, zlib/1.2.13, binutils/2.40, bzip2/1.0.8, ncurses/6.4, libreadline/8.2, Tcl/8.6.13, SQLite/3.43.1, XZ/5.4.4, libffi/3.4.4, OpenSSL/1.1, Python/3.11.5, GCCcore/13.2.0, zlib/1.2.13, binutils/2.40, bzip2/1.0.8, ncurses/6.4, libreadline/8.2, Tcl/8.6.13, SQLite/3.43.1, XZ/5.4.4, libffi/3.4.4, Python/3.11.5, Python/3.11.5 and 10 dependencies unloaded.
-Modules GCCcore/13.2.0, zlib/1.2.13, binutils/2.40, bzip2/1.0.8, ncurses/6.4, libreadline/8.2, Tcl/8.6.13, SQLite/3.43.1, XZ/5.4.4, libffi/3.4.4, OpenSSL/1.1, Python/3.11.5, zlib/1.2.13, binutils/2.40, ncurses/6.4, GCCcore/13.2.0, zlib/1.2.13, binutils/2.40, bzip2/1.0.8, ncurses/6.4, libreadline/8.2, Tcl/8.6.13, SQLite/3.43.1, XZ/5.4.4, libffi/3.4.4, OpenSSL/1.1, Python/3.11.5, Python/3.11.5 and 10 dependencies loaded.
-srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
-slurmstepd: error: *** JOB 21846395 ON n1404 CANCELLED AT 2025-10-25T16:57:41 ***
-  0%|          | 0/16 [00:00<?, ?it/s]slurmstepd: error: *** STEP 21846395.0 ON n1404 CANCELLED AT 2025-10-25T16:57:41 ***
