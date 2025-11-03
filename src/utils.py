@@ -503,6 +503,7 @@ def hebo_search(
         preferences: dict,
         data_id: int = None,
         fold: int = 0,
+        max_walltime: int = 14400, # Abort search after 4h
         ):
     from hebo.design_space.design_space import DesignSpace
     from hebo.optimizers.hebo import HEBO
@@ -535,10 +536,13 @@ def hebo_search(
     search_id = str(uuid.uuid4())               
     print(f"Evaluating {n_trials} configurations for model {model_name} on data config {data_config_hash}.")
     step_size = 32
+    start_time = time.time()
     for i in tqdm(range((n_trials+step_size-1)//step_size)):
         configs = opt.suggest(n_suggestions=step_size)
         fittnesses = []
         for config in configs.to_dict(orient="records"):
+            if (time.time() - start_time) > max_walltime:
+                break
             try:
                 results = train(
                     config=config,
@@ -560,6 +564,8 @@ def hebo_search(
             except Exception as e:
                 warn(f"Config {config} failed, due to: {e}")
                 fittnesses.append(inf)
+        if (time.time() - start_time) > max_walltime:
+            break
         opt.observe(configs, np.array(fittnesses))
 
     # Load Best Config
@@ -593,7 +599,8 @@ def random_search(
         n_trials: int, 
         preferences: dict,
         data_id: int = None,
-        fold: int = 0
+        fold: int = 0,
+        max_walltime: int = 14400, # Abort search after 4h
         ):
     assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
     # Split Data into Train and Validation
@@ -607,7 +614,10 @@ def random_search(
     configs = [cs.get_default_configuration()] + cs.sample_configuration(n_trials-1) 
     search_id = str(uuid.uuid4())               
     print(f"Evaluating {n_trials} configurations for model {model_name} on data config {data_config_hash}.")
+    start_time = time.time()
     for config in tqdm(configs):
+        if (time.time() - start_time) > max_walltime:
+            break
         try:
             train(
                 config=config,
