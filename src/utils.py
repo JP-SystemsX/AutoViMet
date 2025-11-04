@@ -111,10 +111,35 @@ def load_data(data_config_adr: str, id: int = None):
                         train_indices, test_indices = task.get_train_test_split_indices(repeat=repeat, fold=fold, sample=sample)
                         yield X.iloc[train_indices], y.iloc[train_indices], X.iloc[test_indices], y.iloc[test_indices]
     elif data_config["origin"] == "Custom":
-        # TODO Evaluate best AutoViMet Model (k-fold Cross Validation vs time series split) --> Do they agree?
         if data_config["type"] == "Benchmark":
-            # TODO implement benchmark loader function
-            pass
+            # Get all Files in data directory
+            data_files = list(Path(data_config["data_directory"]).glob("*.parquet"))
+            # Order by Alphabet (to always have the same order)
+            data_files = sorted(data_files)
+            data_file = data_files[id]
+            df = pd.read_parquet(data_file)
+
+            if data_config["cv_strategy"]["name"] == "TimeSeriesSplit":
+                # Sort by time
+                df = df.sort_values(by=data_config["cv_strategy"]["order_by"])
+                n_splits = data_config["cv_strategy"]["n_splits"]
+                fold_size = len(df) // (n_splits + 1)
+                for fold in range(n_splits):
+                    train_end = fold_size * (fold + 1)
+                    test_end = fold_size * (fold + 2)
+                    train_data = df.iloc[:train_end]
+                    test_data = df.iloc[train_end:test_end]
+                    X_train = train_data.drop(columns=[data_config["target_column"]])
+                    y_train = train_data[data_config["target_column"]]
+                    X_test = test_data.drop(columns=[data_config["target_column"]])
+                    y_test = test_data[data_config["target_column"]]
+                    yield X_train, y_train, X_test, y_test
+            else:
+                # TODO Also Support Random K-Fold CV -- (k-fold Cross Validation vs time series split) --> Do they agree?
+                raise NotImplementedError(f"CV Strategy {data_config['cv_strategy']['name']} not implemented yet.")
+        else:
+            raise NotImplementedError(f"Data config type {data_config['type']} not implemented yet.")
+
 
 
 def make_dict_storable(advanced_dictionary: dict)->dict:
