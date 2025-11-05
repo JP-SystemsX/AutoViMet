@@ -117,7 +117,7 @@ def load_data(data_config_adr: str, id: int = None):
             create_sqlite_table_from_dict(
                 database_path="results.db",
                 table_name="datasets",
-                data_dict=meta_data,
+                data_dict=make_dict_storable(meta_data),
                 primary_keys=["hash"]
             )
             repeats, folds, samples = task.get_split_dimensions()
@@ -142,7 +142,7 @@ def load_data(data_config_adr: str, id: int = None):
             create_sqlite_table_from_dict(
                 database_path="results.db",
                 table_name="datasets",
-                data_dict=meta_data,
+                data_dict=make_dict_storable(meta_data),
                 primary_keys=["hash"]
             )
 

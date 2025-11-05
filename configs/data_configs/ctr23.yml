@@ -1,4 +1,6 @@
 origin: OpenML # alternatively: Custom
 type: Benchmark
-split: predefined 
-data_id: 353
+cv_strategy: 
+  name: predefined 
+extra:
+  data_id: 353
