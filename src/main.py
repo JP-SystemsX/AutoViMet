@@ -30,7 +30,7 @@ def main(
         search_space_adr: str = None,
         data_id: int = None,
         search_algo: str = "random", # "automl"
-        max_splits=10,
+        max_splits: int = 10,
 ):
     with open(eval_config_adr, 'r') as f:
         eval_config = yaml.safe_load(f)
