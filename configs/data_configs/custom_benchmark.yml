@@ -1,7 +1,8 @@
 origin: Custom
 type: Benchmark
-data_directory: a #TODO
-target_column: a #TODO
+extra:
+    data_directory: a #TODO
+    target_column: a #TODO
 cv_strategy:
     name: TimeSeriesSplit
     n_splits: 3

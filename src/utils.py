@@ -99,11 +99,27 @@ def load_data(data_config_adr: str, id: int = None):
     with open(data_config_adr, 'r') as f:
         data_config = yaml.safe_load(f)
 
+    meta_data = {
+        "ID": id,
+        **data_config
+    }
+    meta_data["hash"] = hash_dict(meta_data)
+
     if data_config["origin"] == "OpenML":
         if data_config["type"] == "Benchmark":
             assert id is not None, "ID must be provided for OpenML Benchmark datasets."
-            dataset, task = get_dataset(data_id=data_config["data_id"], id=id)
+            dataset, task = get_dataset(data_id=data_config["extra"]["data_id"], id=id)
             X, y, _, _ = dataset.get_data(target=task.target_name)
+            # Submit Meta Data
+            meta_data["name"] = dataset.name
+            meta_data["num_features"] = X.shape[1]
+            meta_data["num_samples"] = X.shape[0]
+            create_sqlite_table_from_dict(
+                database_path="results.db",
+                table_name="datasets",
+                data_dict=meta_data,
+                primary_keys=["hash"]
+            )
             repeats, folds, samples = task.get_split_dimensions()
             for repeat in range(repeats):
                 for fold in range(folds):
@@ -113,12 +129,24 @@ def load_data(data_config_adr: str, id: int = None):
     elif data_config["origin"] == "Custom":
         if data_config["type"] == "Benchmark":
             # Get all Files in data directory
-            data_files = list(Path(data_config["data_directory"]).glob("*.parquet"))
+            data_files = list(Path(data_config["extra"]["data_directory"]).glob("*.parquet"))
             # Order by Alphabet (to always have the same order)
             data_files = sorted(data_files)
-            data_file = data_files[id]
             df = pd.read_parquet(data_file)
 
+            # Submit Meta Data
+            data_file = data_files[id]
+            meta_data["name"] = data_file.stem
+            meta_data["num_features"] = df.shape[1] - 1 # Exclude Target Column
+            meta_data["num_samples"] = df.shape[0]
+            create_sqlite_table_from_dict(
+                database_path="results.db",
+                table_name="datasets",
+                data_dict=meta_data,
+                primary_keys=["hash"]
+            )
+
+            TARGET_COLUMN = data_config["extra"]["target_column"]
             if data_config["cv_strategy"]["name"] == "TimeSeriesSplit":
                 # Sort by time
                 df = df.sort_values(by=data_config["cv_strategy"]["order_by"])
@@ -129,10 +157,10 @@ def load_data(data_config_adr: str, id: int = None):
                     test_end = fold_size * (fold + 2)
                     train_data = df.iloc[:train_end]
                     test_data = df.iloc[train_end:test_end]
-                    X_train = train_data.drop(columns=[data_config["target_column"]])
-                    y_train = train_data[data_config["target_column"]]
-                    X_test = test_data.drop(columns=[data_config["target_column"]])
-                    y_test = test_data[data_config["target_column"]]
+                    X_train = train_data.drop(columns=[TARGET_COLUMN])
+                    y_train = train_data[TARGET_COLUMN]
+                    X_test = test_data.drop(columns=[TARGET_COLUMN])
+                    y_test = test_data[TARGET_COLUMN]
                     yield X_train, y_train, X_test, y_test
             else:
                 # TODO Also Support Random K-Fold CV -- (k-fold Cross Validation vs time series split) --> Do they agree?
