@@ -30,6 +30,7 @@ def main(
         search_space_adr: str = None,
         data_id: int = None,
         search_algo: str = "random", # "automl"
+        max_splits=10,
 ):
     with open(eval_config_adr, 'r') as f:
         eval_config = yaml.safe_load(f)
@@ -46,6 +47,8 @@ def main(
     results = defaultdict(list)
     i = 0
     for X_train, y_train, X_test, y_test in data_loader:
+        if i >= max_splits: # limit number of evals to max 10 for feasability reasons
+            break
         # Repeat HPO for every split (only fair because AG can (or must) re-optimize as well)
         model = None
         search_start = time.time()
@@ -133,6 +136,8 @@ def main(
         prediction = model.predict(X_test)
         prediction_duration = time.time() - prediction_start_time
         results["prediction_time"].append(prediction_duration)
+        results["train_samples"] = len(X_train)
+        results["test_samples"] = len(X_test)
         for metric_name, metric in metric_collection.items():
             results[metric_name].append(metric(y_test, prediction))
         
