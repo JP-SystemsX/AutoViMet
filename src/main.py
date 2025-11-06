@@ -136,8 +136,8 @@ def main(
         prediction = model.predict(X_test)
         prediction_duration = time.time() - prediction_start_time
         results["prediction_time"].append(prediction_duration)
-        results["train_samples"] = len(X_train)
-        results["test_samples"] = len(X_test)
+        results["train_samples"].append(len(X_train))
+        results["test_samples"].append(len(X_test))
         for metric_name, metric in metric_collection.items():
             results[metric_name].append(metric(y_test, prediction))
         
