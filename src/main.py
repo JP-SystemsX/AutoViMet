@@ -44,6 +44,7 @@ def main(
 
     # Check if result already exists --> If so abord
     if already_finished(data_id=data_id, search_space_hash=search_space_hash, data_config_hash=data_config_hash, search_algo=search_algo):
+        print("Already Done!")
         return
 
     # Evaluate best Model (Time Series Cross Validation)
