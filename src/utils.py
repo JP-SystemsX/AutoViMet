@@ -169,6 +169,25 @@ def load_data(data_config_adr: str, id: int = None):
             raise NotImplementedError(f"Data config type {data_config['type']} not implemented yet.")
 
 
+def already_finished(
+    data_id: int,
+    search_space_hash: str,
+    data_config_hash: str,
+    search_algo: str,
+):
+    
+    conn = sqlite3.connect("results.db")
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT 1 FROM results
+        WHERE data_id = ? AND search_space_hash = ? AND data_config_hash = ? AND search_algo = ?
+        LIMIT 1
+    """, (data_id, search_space_hash, data_config_hash, search_algo))
+
+    exists = cur.fetchone() is not None
+    return exists
+
 
 def make_dict_storable(advanced_dictionary: dict)->dict:
     """

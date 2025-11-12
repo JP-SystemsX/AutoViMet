@@ -7,7 +7,8 @@ from utils import (
     automl_search,
     hebo_search,
     dehb_search,
-    get_preprocessor
+    get_preprocessor,
+    already_finished
     )
 from autogluon.features.generators import AutoMLPipelineFeatureGenerator
 import models
@@ -41,6 +42,9 @@ def main(
     search_space_hash = archive_config("results.db", config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name})
     data_config_hash = archive_config("results.db", config_path=data_config_adr, table_name="data_configs")
 
+    # Check if result already exists --> If so abord
+    if already_finished(data_id=data_id, search_space_hash=search_space_hash, data_config_hash=data_config_hash, search_algo=search_algo):
+        return
 
     # Evaluate best Model (Time Series Cross Validation)
     data_loader = load_data(data_config_adr, id=data_id) 
