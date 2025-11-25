@@ -1,10 +1,4 @@
 hyperparameters:
-- name: n_estimators
-  default_value: 100
-  type: uniform_int
-  lower: 10
-  upper: 1000
-  log: true
 - name: criterion
   default_value: "squared_error"
   type: categorical
@@ -19,7 +13,7 @@ hyperparameters:
   lower: 2
   upper: 20
 - name: max_features
-  default_value: 1.0
+  default_value: 0.5
   type: uniform_float
   lower: 0.1
-  upper: 1.0
+  upper: 0.5

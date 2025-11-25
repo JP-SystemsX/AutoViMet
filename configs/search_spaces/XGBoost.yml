@@ -38,14 +38,16 @@ hyperparameters:
   type: uniform_int
   lower: 2
   upper: 8
-- name: n_estimators
-  default_value: 100
-  type: uniform_int
-  lower: 2
-  upper: 10000
-  log: true
+# Decision against tuning n_estimator because larger is always better but also slower and diminishing returns 
+# -> One would need to also consider runtime for tuning this HP making sense
+# - name: n_estimators 
+#   default_value: 100
+#   type: uniform_int
+#   lower: 2
+#   upper: 10000
+#   log: true
 - name: min_child_weight
   default_value: 1
   type: uniform_int
   lower: 1
-  upper: 5
+  upper: 50

@@ -103,7 +103,7 @@ def load_data(data_config_adr: str, id: int = None):
         "ID": id,
         **data_config
     }
-    meta_data["hash"] = hash_dict(meta_data)
+    meta_data["hash_key"] = hash_dict(data_config)
 
     if data_config["origin"] == "OpenML":
         if data_config["type"] == "Benchmark":
@@ -118,7 +118,7 @@ def load_data(data_config_adr: str, id: int = None):
                 database_path="results.db",
                 table_name="datasets",
                 data_dict=make_dict_storable(meta_data),
-                primary_keys=["hash"]
+                primary_keys=["hash_key", "ID"]
             )
             repeats, folds, samples = task.get_split_dimensions()
             for repeat in range(repeats):
@@ -143,7 +143,7 @@ def load_data(data_config_adr: str, id: int = None):
                 database_path="results.db",
                 table_name="datasets",
                 data_dict=make_dict_storable(meta_data),
-                primary_keys=["hash"]
+                primary_keys=["hash_key", "ID"]
             )
 
             TARGET_COLUMN = data_config["extra"]["target_column"]
@@ -186,6 +186,7 @@ def already_finished(
     """, (data_id, search_space_hash, data_config_hash, search_algo))
 
     exists = cur.fetchone() is not None
+    conn.close()
     return exists
 
 
@@ -457,9 +458,9 @@ def train(
     results = {
         "model": str(model_name),
         "search_id": search_id,
-        "search_space_hash": search_space_hash,
-        "data_config_hash": data_config_hash,
-        "data_id": data_id,
+        #"search_space_hash": search_space_hash,
+        #"data_config_hash": data_config_hash,
+        #"data_id": data_id,
         "fold": fold,
         "fidelity": fidelity,
         "config": config_,
@@ -472,7 +473,9 @@ def train(
         results[metric_name] = metric(y_val, prediction)
 
     # Write Results to DB 
-    store_complex_dict(results, database_path="results.db", table_name="trials")
+    tmp_path = Path(f"./cache/trials/{search_id}.db")
+    tmp_path.parent.mkdir(parents=True, exist_ok=True)
+    store_complex_dict(results, database_path=str(tmp_path), table_name="trials")
 
     preference_score = sum(results[metric] * weight for metric, weight in preferences.items())
 
@@ -641,7 +644,8 @@ def hebo_search(
         opt.observe(configs, np.array(fittnesses))
 
     # Load Best Config
-    conn = sqlite3.connect("results.db")
+    tmp_path = Path(f"./cache/trials/{search_id}.db")
+    conn = sqlite3.connect(str(tmp_path))
     results = pd.read_sql(
         "SELECT * FROM trials where search_space_hash = ? and search_id = ? and data_config_hash = ? and data_id = ?", 
         conn, 

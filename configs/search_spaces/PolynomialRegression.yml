@@ -3,7 +3,7 @@ hyperparameters:
   default_value: 1
   type: uniform_int
   lower: 1
-  upper: 10
+  upper: 4 # Much higher and it becomes MUUUUUUCHHH Slower
 - name: fit_intercept
   default_value: true
   type: categorical

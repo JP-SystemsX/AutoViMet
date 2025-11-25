@@ -28,6 +28,7 @@ from sklearn.tree._tree import DOUBLE
 import uuid
 from pathlib import Path
 from sklearn.tree import DecisionTreeRegressor
+from ast import literal_eval
 
 
 
@@ -98,8 +99,8 @@ class GaussianProcess(BaseModel):
         self.model = GaussianProcessRegressor(kernel=kernel, **kwargs)
     
     def train(self, X, y):
-        if len(X) > 1000:
-            X = X.sample(n=1000, random_state=42)
+        if len(X) > 1500:
+            X = X.sample(n=1500, random_state=42)
             y = y.loc[X.index]
         self.model.fit(X, y)
     
@@ -112,6 +113,9 @@ class SupportVectorRegression(BaseModel):
         self.model = SVR(**kwargs)
     
     def train(self, X, y):
+        # if len(X) > 1500:
+        #     X = X.sample(n=1500, random_state=42)
+        #     y = y.loc[X.index]
         self.model.fit(X, y)
     
     def predict(self, X):
@@ -187,8 +191,9 @@ class TabPFN(BaseModel):
 
 
 class MLP(BaseModel):
-    def __init__(self, **kwargs):
-        self.model = MLPRegressor(**kwargs)
+    def __init__(self, hidden_layer_sizes, **kwargs):
+        hidden_layer_sizes = literal_eval(hidden_layer_sizes)
+        self.model = MLPRegressor(hidden_layer_sizes=hidden_layer_sizes, **kwargs)
     
     def train(self, X, y):
         self.model.fit(X=X, y=y)

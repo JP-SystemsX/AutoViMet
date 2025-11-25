@@ -13,14 +13,14 @@ hyperparameters:
   lower: 0.0001
   upper: 0.5
   log: true
-- name: n_estimators
-  default_value: 100
-  type: categorical
-  choices:
-  - 100
-  - 200
-  - 500
-  - 1000
+# - name: n_estimators
+#   default_value: 100
+#   type: categorical
+#   choices:
+#   - 100
+#   - 200
+#   - 500
+#   - 1000
 - name: subsample
   default_value: 1.0
   type: uniform_float

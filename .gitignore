@@ -9,3 +9,6 @@ hpc/logs_old/*
 hpc/venvs/*
 cache/
 *-journal
+*.pdf
+*/ipynb-checkpoint/*
+*/core.*

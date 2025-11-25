@@ -7,11 +7,11 @@ hyperparameters:
     - 'poly'
     - 'rbf'
     - 'sigmoid'
-- name: degree
+- name: degree 
   default_value: 3
   type: uniform_int
   lower: 1
-  upper: 10
+  upper: 4
 - name: gamma
   default_value: 'scale'
   type: categorical

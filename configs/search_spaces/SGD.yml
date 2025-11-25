@@ -26,12 +26,12 @@ hyperparameters:
   type: uniform_float
   lower: 0.0
   upper: 1.0
-- name: fit_intercept
-  default_value: true
-  type: categorical
-  choices:
-    - true
-    - false
+# - name: fit_intercept
+#   default_value: true
+#   type: categorical
+#   choices:
+#     - true
+#     - false
 - name: learning_rate
   default_value: invscaling
   type: categorical
@@ -48,7 +48,8 @@ hyperparameters:
   upper: 1.0
 - name: max_iter
   default_value: 1000
-  type: uniform_int
-  lower: 50
-  upper: 5000
+  type: categorical
+  choices:
+    - 1000
+    - 3000
 

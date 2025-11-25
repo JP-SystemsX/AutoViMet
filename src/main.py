@@ -50,6 +50,7 @@ def main(
     # Evaluate best Model (Time Series Cross Validation)
     data_loader = load_data(data_config_adr, id=data_id) 
     results = defaultdict(list)
+    best_configs = []
     i = 0
     for X_train, y_train, X_test, y_test in data_loader:
         if i >= max_splits: # limit number of evals to max 10 for feasability reasons
@@ -145,16 +146,17 @@ def main(
         results["test_samples"].append(len(X_test))
         for metric_name, metric in metric_collection.items():
             results[metric_name].append(metric(y_test, prediction))
-        
+        best_configs.append(best_config)
     # Commit Raw Results to DB
     store_complex_dict(
         {
             "model": str(model_name),
+            "search_space_name": Path(search_space_adr).stem,
             "search_id": search_id,
             "search_space_hash": search_space_hash,
             "data_config_hash": data_config_hash,
             "data_id": data_id,
-            "config": best_config,
+            "best_configs": best_configs,
             "search_algo": search_algo,
             "timestamp": time.time(),
             **results
