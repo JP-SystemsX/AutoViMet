@@ -12,3 +12,4 @@ cache/
 *.pdf
 */ipynb-checkpoint/*
 */core.*
+hpc/logs_prime/*

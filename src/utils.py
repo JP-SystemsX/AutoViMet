@@ -578,7 +578,7 @@ def hebo_search(
         preferences: dict,
         data_id: int = None,
         fold: int = 0,
-        max_walltime: int = 14400, # Abort search after 4h
+        max_walltime: int = 7200, # Abort search after 2h
         ):
     from hebo.design_space.design_space import DesignSpace
     from hebo.optimizers.hebo import HEBO
@@ -676,7 +676,7 @@ def random_search(
         preferences: dict,
         data_id: int = None,
         fold: int = 0,
-        max_walltime: int = 14400, # Abort search after 4h
+        max_walltime: int = 7200, # Abort search after 2h
         ):
     assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
     # Split Data into Train and Validation
