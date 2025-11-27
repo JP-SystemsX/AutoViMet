@@ -179,11 +179,14 @@ def already_finished(
     conn = sqlite3.connect("results.db")
     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT 1 FROM results
-        WHERE data_id = ? AND search_space_hash = ? AND data_config_hash = ? AND search_algo = ?
-        LIMIT 1
-    """, (data_id, search_space_hash, data_config_hash, search_algo))
+    try: 
+        cur.execute("""
+            SELECT 1 FROM results
+            WHERE data_id = ? AND search_space_hash = ? AND data_config_hash = ? AND search_algo = ?
+            LIMIT 1
+        """, (data_id, search_space_hash, data_config_hash, search_algo))
+    except:
+        return False
 
     exists = cur.fetchone() is not None
     conn.close()
