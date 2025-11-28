@@ -650,9 +650,9 @@ def hebo_search(
     tmp_path = Path(f"./cache/trials/{search_id}.db")
     conn = sqlite3.connect(str(tmp_path))
     results = pd.read_sql(
-        "SELECT * FROM trials where search_space_hash = ? and search_id = ? and data_config_hash = ? and data_id = ?", 
+        "SELECT * FROM trials where search_id = ?", 
         conn, 
-        params=(search_space_hash, search_id, data_config_hash, data_id)
+        params=(search_id, )
         )
     conn.close()
     # assert len(results) == n_trials, f"Expected {n_trials} results but got {len(results)}. Something went wrong during the evaluation."
