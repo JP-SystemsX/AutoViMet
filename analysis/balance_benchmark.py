@@ -3,8 +3,13 @@ import pandas as pd
 from xgboost import XGBRegressor
 from sklearn.linear_model import LinearRegression
 import numpy as np
+import shutil
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import MinMaxScaler
 
-original_benchmark_path = Path("../data/benchmarks/original")
+
+original_benchmark_path = Path("../data/benchmarks/original/TODO")
 
 
 def greedy_coreset(X: np.ndarray, k: int, random_state: int = 0):
@@ -79,7 +84,50 @@ if __name__ == "__main__":
     # Save meta data to CSV
     meta_data_df.to_csv("../analysis/cache/analysis/balance_benchmark_meta_data.csv", index=False)
     # TODO Apply Core Set
-     
+    selected_indices = greedy_coreset(
+        X=meta_data_df[['num_rows', 'num_cols', 'std_target', 'mean_target', 'xgb_r2', 'lr_r2']].to_numpy(),
+        k=50,
+        random_state=42
+    )
 
-    # TODO Copy resulting set over to new directory
+    selected_meta_data = meta_data_df.iloc[selected_indices]
+    # Copy resulting set over to new directory
+    for file in selected_meta_data['data_set_path']:
+        dest_path = Path("../data/benchmarks/balanced/") / original_benchmark_path.name / file.name
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(file, dest_path)
+     
+    # Anonimize Sensitive data by min max scalling
+    scaler = MinMaxScaler()
+    meta_data_df_scaled = meta_data_df.copy()
+    meta_data_df_scaled[['num_rows', 'num_cols', 'std_target', 'mean_target', 'xgb_r2', 'lr_r2']] = scaler.fit_transform(
+        meta_data_df[['num_rows', 'num_cols', 'std_target', 'mean_target', 'xgb_r2', 'lr_r2']]
+    )
+            
+    selected_meta_data = meta_data_df.iloc[selected_indices]
+
     # TODO Plot Each pair Distribution old meta data distribution and add mark selected samples  
+    plot_pairs = [
+        ("num_rows", "num_cols"),
+        ("std_target", "mean_target"),
+        ("xgb_r2", "lr_r2"),
+        ("num_rows", "xgb_r2"),
+        ("num_rows", "lr_r2"),
+        ("num_rows", "std_target"),
+        ("num_cols", "std_target"),
+    ]
+
+    for x_col, y_col in plot_pairs:
+        plt.figure(figsize=(8, 6))
+        sns.scatterplot(data=meta_data_df, x=x_col, y=y_col, label='Original', alpha=0.5)
+        sns.scatterplot(data=selected_meta_data, x=x_col, y=y_col, label='Selected Coreset', color='red', s=100)
+        plt.title(f'Scatter Plot of {x_col} vs {y_col}')
+        plt.xlabel(x_col)
+        plt.ylabel(y_col)
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        out_path = Path(f"../analysis/cache/analysis/benchmarks/plots/{x_col}_vs_{y_col}_coreset_selection.pdf")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(out_path)
+        plt.close()
