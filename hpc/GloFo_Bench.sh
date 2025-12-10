@@ -4,10 +4,10 @@
 #BSUB -R "rusage[mem=16000]"
 #BSUB -q hpc
 export OMP_NUM_THREADS=2
-export python=/proj/tdtcad/pjungmann/Virtual_Metrology/deployment_simulation/virtual_environments/autoML3/bin/python3
+#export python=/proj/tdtcad/pjungmann/Virtual_Metrology/deployment_simulation/virtual_environments/autoML3/bin/python3
+export python=/proj/tdtcad2/pjungman/Virtual_Metrology/deployment_simulation/LOTSE_setup4/AutoViMet/AutoViMet_env/bin/python3
  
- 
-project_root_folder="/proj/tdtcad2/pjungman/Virtual_Metrology/deployment_simulation/LOTSE_setup5"
+project_root_folder="/proj/tdtcad2/pjungman/Virtual_Metrology/deployment_simulation/LOTSE_setup4"
 benchmark_name="BD_Bench"
 cd $project_root_folder
 

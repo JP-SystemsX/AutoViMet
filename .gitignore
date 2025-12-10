@@ -15,3 +15,5 @@ cache/
 hpc/logs_prime/*
 *.parquet
 *.csv
+/AutoViMet_env
+*/AutoViMet_env/*
