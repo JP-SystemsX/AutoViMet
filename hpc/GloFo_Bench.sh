@@ -50,7 +50,7 @@ do
         -R "select[type=RHEL8_64]" \
         -o ./tmp/logs/$benchmark_name-$DATA_ID-$MODEL_NAME-$i-out.txt \
         -e ./tmp/logs/$benchmark_name-$DATA_ID-$MODEL_NAME-$i-err.txt \
-        "$python ./src/main.py --model-name "$MODEL_NAME" --eval-config-adr "configs/eval_configs/standard_eval.yml" --data-config-adr "configs/data_configs/glofo_bench.yml" --search-space-adr "$FILE" --data-id "$DATA_ID" --search-algo "$SEARCH_ALGO"
+        "$python ./src/main.py --model-name $MODEL_NAME --eval-config-adr configs/eval_configs/standard_eval.yml --data-config-adr configs/data_configs/glofo_bench.yml --search-space-adr $FILE --data-id $DATA_ID --search-algo $SEARCH_ALGO"
     echo '---'
  
 done
