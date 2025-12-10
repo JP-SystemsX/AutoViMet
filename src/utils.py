@@ -132,10 +132,10 @@ def load_data(data_config_adr: str, id: int = None):
             data_files = list(Path(data_config["extra"]["data_directory"]).glob("*.parquet"))
             # Order by Alphabet (to always have the same order)
             data_files = sorted(data_files)
+            data_file = data_files[id]
             df = pd.read_parquet(data_file)
 
             # Submit Meta Data
-            data_file = data_files[id]
             meta_data["name"] = data_file.stem
             meta_data["num_features"] = df.shape[1] - 1 # Exclude Target Column
             meta_data["num_samples"] = df.shape[0]
@@ -509,7 +509,7 @@ def dehb_search(
     from dehb import DEHB, DE
     assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
     # Split Data into Train and Validation
-    validation_split = len(y_train) // 10
+    validation_split = max(len(y_train) // 10, 2) # 2 for R2
     X_val_, y_val_ = X_train[-validation_split:], y_train[-validation_split:]
     X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
 
@@ -601,7 +601,7 @@ def hebo_search(
 
     assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
     # Split Data into Train and Validation
-    validation_split = len(y_train) // 10
+    validation_split = max((len(y_train) // 10), 2)
     X_val_, y_val_ = X_train[-validation_split:], y_train[-validation_split:]
     X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
 
@@ -638,7 +638,7 @@ def hebo_search(
                     fold=fold,
                     preferences=preferences
                 )
-                fittnesses.append(results["fitness"])
+                fittnesses.append(inf if np.isnan(results["fitness"]) else results["fitness"])
             except Exception as e:
                 warn(f"Config {config} failed, due to: {e}")
                 fittnesses.append(inf)
@@ -657,7 +657,7 @@ def hebo_search(
     conn.close()
     # assert len(results) == n_trials, f"Expected {n_trials} results but got {len(results)}. Something went wrong during the evaluation."
     results["preference_score"] = sum(results[metric] * weight for metric, weight in preferences.items())
-    incumbent = results.sort_values("preference_score", ascending=True).iloc[0]
+    incumbent = results.dropna(subset=["preference_score"]).sort_values("preference_score", ascending=True).iloc[0]
     best_config = yaml.safe_load(incumbent["config"])
     # Type Cast back to original (e.g. we store bools as int two typecasts required to cast it back to original)
     best_config = Configuration(cs, values=best_config)
@@ -683,7 +683,7 @@ def random_search(
         ):
     assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
     # Split Data into Train and Validation
-    validation_split = len(y_train) // 10
+    validation_split = max(len(y_train) // 10, 2)
     X_val_, y_val_ = X_train[-validation_split:], y_train[-validation_split:]
     X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
 

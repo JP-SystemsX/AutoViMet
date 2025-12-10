@@ -13,3 +13,5 @@ cache/
 */ipynb-checkpoint/*
 */core.*
 hpc/logs_prime/*
+*.parquet
+*.csv

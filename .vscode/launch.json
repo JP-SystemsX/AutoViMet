@@ -26,11 +26,11 @@
             "program": "src/main.py",
             "console": "integratedTerminal",
             "args": [
-                "--model-name", "AdaBoost",
+                "--model-name", "Lasso",
                 "--eval-config-adr", "configs/eval_configs/standard_eval.yml",
-                "--data-config-adr", "configs/data_configs/ctr23.yml",
-                "--search-space-adr", "configs/search_spaces/AdaBoost.yml",
-                "--data-id", "25",
+                "--data-config-adr", "configs/data_configs/glofo_bench.yml",
+                "--search-space-adr", "configs/search_spaces/Lasso.yml",
+                "--data-id", "0",
                 "--search-algo", "HEBO"
             ]
         }

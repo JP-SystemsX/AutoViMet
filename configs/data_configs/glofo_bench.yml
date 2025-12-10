@@ -1,0 +1,9 @@
+origin: Custom
+type: Benchmark
+extra:
+    data_directory: ./data/GloFo_bench2
+    target_column: LABEL_target
+cv_strategy:
+    name: TimeSeriesSplit
+    n_splits: 3
+    order_by: MEAS_claim_time

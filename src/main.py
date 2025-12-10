@@ -10,7 +10,6 @@ from utils import (
     get_preprocessor,
     already_finished
     )
-from autogluon.features.generators import AutoMLPipelineFeatureGenerator
 import models
 import metrics
 from collections import defaultdict
