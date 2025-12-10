@@ -135,7 +135,7 @@ class XGBoost(BaseModel):
 
 class LightGBM(BaseModel):
     def __init__(self, **kwargs):
-        self.model = LGBMRegressor(**kwargs)
+        self.model = LGBMRegressor(**kwargs, n_jobs=2)
     
     def train(self, X, y):
         self.model.fit(X=X, y=y)
@@ -147,7 +147,7 @@ class CatBoost(BaseModel):
     def __init__(self, **kwargs):
         train_dir = Path("./cache/catboost/" + str(uuid.uuid4()))
         train_dir.mkdir(exist_ok=True, parents=True)
-        self.model = CatBoostRegressor(verbose=0, train_dir=train_dir, allow_writing_files=False, **kwargs) # This thing blocks itself if trained in parallel
+        self.model = CatBoostRegressor(verbose=0, thread_count=2, train_dir=train_dir, allow_writing_files=False, **kwargs) # This thing blocks itself if trained in parallel
     
     def train(self, X, y):
         cat_cols = X.select_dtypes(include=["category", "object"]).columns.tolist()
@@ -159,7 +159,7 @@ class CatBoost(BaseModel):
 
 class RandomForest(BaseModel):
     def __init__(self, **kwargs):
-        self.model = RandomForestRegressor(**kwargs)
+        self.model = RandomForestRegressor(**kwargs, n_jobs=2)
     
     def train(self, X, y):
         self.model.fit(X=X, y=y)
@@ -169,7 +169,7 @@ class RandomForest(BaseModel):
     
 class ExtraTrees(BaseModel):
     def __init__(self, **kwargs):
-        self.model = ExtraTreesRegressor(**kwargs)
+        self.model = ExtraTreesRegressor(**kwargs, n_jobs=2)
     
     def train(self, X, y):
         self.model.fit(X=X, y=y)
@@ -369,7 +369,7 @@ class AdaBoost(BaseModel):
 
 class KNN(BaseModel):
     def __init__(self, **kwargs):
-        self.model = KNeighborsRegressor(**kwargs)
+        self.model = KNeighborsRegressor(**kwargs, n_jobs=2)
     
     def train(self, X, y):
         self.model.fit(X, y)
@@ -390,7 +390,7 @@ class SGD(BaseModel):
 class Bagging(BaseModel):
     def __init__(self, estimator, **kwargs):
         estimator = getattr(sys.modules[__name__], estimator)()
-        self.model = BaggingRegressor(estimator=estimator, **kwargs)
+        self.model = BaggingRegressor(estimator=estimator, n_jobs=2, **kwargs)
     
     def train(self, X, y):
         self.model.fit(X, y)
