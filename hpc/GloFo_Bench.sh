@@ -25,7 +25,10 @@ NUM_DATASETS=102 # TODO Read out automatically
 
 
  
-for i in {$((INDEX * 50))..$(((INDEX + 1) * 50))}; # TODO increase to cover all datasets
+start=$((INDEX * 50))
+end=$(( (INDEX + 1) * 50 ))
+
+for ((i = start; i <= end; i++));
 do
     # Derive parameters
     DATA_ID=$(( i % NUM_DATASETS ))           # number between 0–35
