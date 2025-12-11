@@ -24,6 +24,7 @@ NUM_FILES=${#FILES[@]}
 NUM_DATASETS=102 # TODO Read out automatically
 
 
+mkdir -p "./tmp/logs"
  
 start=$((INDEX * 50))
 end=$(( (INDEX + 1) * 50 ))
