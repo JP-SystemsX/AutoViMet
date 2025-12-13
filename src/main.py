@@ -17,6 +17,7 @@ import typer
 import time
 from pathlib import Path
 import os
+import uuid
 
 
 app = typer.Typer(pretty_exceptions_enable=False)
@@ -50,7 +51,9 @@ def main(
     data_loader = load_data(data_config_adr, id=data_id) 
     results = defaultdict(list)
     best_configs = []
+    search_ids = []
     i = 0
+    experiment_id = str(uuid.uuid4()) 
     for X_train, y_train, X_test, y_test in data_loader:
         if i >= max_splits: # limit number of evals to max 10 for feasability reasons
             break
@@ -69,7 +72,8 @@ def main(
                     n_trials=n_trials,
                     preferences=preferences,
                     data_id=data_id,
-                    fold=i
+                    fold=i,
+                    experiment_id=experiment_id
                 )
             case "automl":
                 model, search_id, best_config= automl_search(
@@ -92,7 +96,8 @@ def main(
                     data_id=data_id,
                     fold=i,
                     n_workers=4, #TODO make accesible via CLI
-                    mode="DEHB"
+                    mode="DEHB",
+                    experiment_id=experiment_id
                 )
             case "DE":
                 best_config, search_id = dehb_search(
@@ -107,7 +112,8 @@ def main(
                     data_id=data_id,
                     fold=i,
                     n_workers=4, #TODO make accesible via CLI
-                    mode="DE"
+                    mode="DE",
+                    experiment_id=experiment_id
                 )
             case "HEBO":
                 best_config, search_id = hebo_search(
@@ -120,7 +126,8 @@ def main(
                     n_trials=n_trials,
                     preferences=preferences,
                     data_id=data_id,
-                    fold=i
+                    fold=i,
+                    experiment_id=experiment_id
                 )
             case _:
                 raise NotImplementedError(f"Search Algorithm {search_algo} not implemented.")
@@ -146,12 +153,14 @@ def main(
         for metric_name, metric in metric_collection.items():
             results[metric_name].append(metric(y_test, prediction))
         best_configs.append(best_config)
+        search_ids.append(search_id)
     # Commit Raw Results to DB
     store_complex_dict(
         {
             "model": str(model_name),
             "search_space_name": Path(search_space_adr).stem,
-            "search_id": search_id,
+            "search_ids": search_ids,
+            "experiment_id": experiment_id,
             "search_space_hash": search_space_hash,
             "data_config_hash": data_config_hash,
             "data_id": data_id,

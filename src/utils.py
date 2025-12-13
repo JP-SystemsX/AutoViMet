@@ -432,6 +432,7 @@ def train(
         data_id: int,
         fold: int,
         preferences: dict,
+        experiment_id=""
 ):
     config = dict(config)
     config_ = deepcopy(config)
@@ -461,6 +462,7 @@ def train(
     results = {
         "model": str(model_name),
         "search_id": search_id,
+        "experiment_id": experiment_id,
         #"search_space_hash": search_space_hash,
         #"data_config_hash": data_config_hash,
         #"data_id": data_id,
@@ -504,7 +506,8 @@ def dehb_search(
         data_id: int = None,
         fold: int = 0,
         n_workers=4, #TODO send through
-        mode = "DEHB" #or 'DE'
+        mode = "DEHB", #or 'DE'
+        experiment_id = "",
         ):
     from dehb import DEHB, DE
     assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
@@ -541,6 +544,7 @@ def dehb_search(
             data_id=data_id,
             fold=fold,
             preferences=preferences,
+            experiment_id=experiment_id
         ),
         cs=cs, 
         dimensions=len(list(cs.values())), 
@@ -582,6 +586,7 @@ def hebo_search(
         data_id: int = None,
         fold: int = 0,
         max_walltime: int = 7200, # Abort search after 2h
+        experiment_id = ""
         ):
     from hebo.design_space.design_space import DesignSpace
     from hebo.optimizers.hebo import HEBO
@@ -636,7 +641,8 @@ def hebo_search(
                     data_config_hash=data_config_hash,
                     data_id=data_id,
                     fold=fold,
-                    preferences=preferences
+                    preferences=preferences,
+                    experiment_id=experiment_id
                 )
                 fittnesses.append(inf if np.isnan(results["fitness"]) else results["fitness"])
             except Exception as e:
@@ -680,6 +686,7 @@ def random_search(
         data_id: int = None,
         fold: int = 0,
         max_walltime: int = 7200, # Abort search after 2h
+        experiment_id=""
         ):
     assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
     # Split Data into Train and Validation
@@ -712,7 +719,8 @@ def random_search(
                 data_config_hash=data_config_hash,
                 data_id=data_id,
                 fold=fold,
-                preferences=preferences
+                preferences=preferences,
+                experiment_id=experiment_id
             )
         except Exception as e:
             warn(f"Config {config} failed, due to: {e}")
