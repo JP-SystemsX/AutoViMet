@@ -464,8 +464,8 @@ def train(
         "search_id": search_id,
         "experiment_id": experiment_id,
         #"search_space_hash": search_space_hash,
-        #"data_config_hash": data_config_hash,
-        #"data_id": data_id,
+        "data_config_hash": data_config_hash,
+        "data_id": data_id,
         "fold": fold,
         "fidelity": fidelity,
         "config": config_,
@@ -478,7 +478,7 @@ def train(
         results[metric_name] = metric(y_val, prediction)
 
     # Write Results to DB 
-    tmp_path = Path(f"./cache/trials/{search_id}.db")
+    tmp_path = Path(f"./cache/trials/{experiment_id}.db")
     tmp_path.parent.mkdir(parents=True, exist_ok=True)
     store_complex_dict(results, database_path=str(tmp_path), table_name="trials")
 
@@ -653,7 +653,7 @@ def hebo_search(
         opt.observe(configs, np.array(fittnesses))
 
     # Load Best Config
-    tmp_path = Path(f"./cache/trials/{search_id}.db")
+    tmp_path = Path(f"./cache/trials/{experiment_id}.db")
     conn = sqlite3.connect(str(tmp_path))
     results = pd.read_sql(
         "SELECT * FROM trials where search_id = ?", 
