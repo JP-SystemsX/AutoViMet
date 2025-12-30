@@ -18,3 +18,6 @@ hpc/logs_prime/*
 */AutoViMet_env/*
 *core.*
 hpc/logs_prime/*
+*/.ipynb_checkpoints/
+*logs*
+
