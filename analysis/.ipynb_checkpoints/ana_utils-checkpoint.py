@@ -7,7 +7,8 @@ import seaborn as sns
 from tabulate import tabulate
 from pathlib import Path
 
-db_path = "../results.db"
+ctr_path = "../results.db"
+vimet_path = "../results.db" #TODO
 font_size = 14
 font_size_large = 16
 
@@ -17,7 +18,9 @@ def convert_listlike_cols(df: pd.DataFrame) -> pd.DataFrame:
         # detect strings that *look* like lists
         sample = df[col].dropna().astype(str).head(20)
         if sample.map(lambda x: x.startswith("[") and x.endswith("]")).all():
+            print(col)
             df[col] = df[col].map(ast.literal_eval)
+            df[col+"_corrected"] = df[col].apply(lambda l: [(0 if x is None or x < 0 else x) for x in l])
     return df
 
 

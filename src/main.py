@@ -141,17 +141,29 @@ def main(
 
             X_train = feature_generator.fit_transform(X=X_train, y=y_train)
             X_test = feature_generator.transform(X_test)
-            # Train Model on full train set
-            model.train(X_train, y_train)
+            try:
+                # Train Model on full train set
+                model.train(X_train, y_train)
+                trained = True
+            except Exception as e:
+                print(f"Training failed with error: {e}. Continuing without training.")
+                trained = False
         # Evaluate Model on test set
         prediction_start_time = time.time()
-        prediction = model.predict(X_test)
-        prediction_duration = time.time() - prediction_start_time
-        results["prediction_time"].append(prediction_duration)
+        try:
+            assert trained, "Model training failed, cannot predict."
+            prediction = model.predict(X_test)
+            prediction_duration = time.time() - prediction_start_time
+            results["prediction_time"].append(prediction_duration)
+            for metric_name, metric in metric_collection.items():
+                results[metric_name].append(metric(y_test, prediction))
+        except Exception as e:
+            print(f"Prediction failed with error: {e}. Filling with Nones.")
+            results["prediction_time"].append(None)
+            for metric_name in metric_collection.keys():
+                results[metric_name].append(None)
         results["train_samples"].append(len(X_train))
         results["test_samples"].append(len(X_test))
-        for metric_name, metric in metric_collection.items():
-            results[metric_name].append(metric(y_test, prediction))
         best_configs.append(best_config)
         search_ids.append(search_id)
     # Commit Raw Results to DB

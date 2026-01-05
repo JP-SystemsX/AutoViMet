@@ -2,7 +2,7 @@
 #SBATCH --cpus-per-task=4 # CPU Count
 #SBATCH --nodes=1
 #SBATCH --mem=160G # Working Memory
-#SBATCH --time=36:00:00  # Runtime HH:MM:SS
+#SBATCH --time=48:00:00  # Should take at most 20h but in rare exceptions might take longer 
 #SBATCH --account=p_llm_timeseries
 #SBATCH --job-name=ctr23
 #SBATCH --output=hpc/logs/ctr23-%j-%a.out  # Output Address 

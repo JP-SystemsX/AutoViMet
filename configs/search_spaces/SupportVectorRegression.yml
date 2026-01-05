@@ -4,14 +4,14 @@ hyperparameters:
   type: categorical
   choices:
     - 'linear'
-    - 'poly'
+    # - 'poly' # Too slow
     - 'rbf'
     - 'sigmoid'
-- name: degree 
-  default_value: 3
-  type: uniform_int
-  lower: 1
-  upper: 4
+# - name: degree 
+#   default_value: 3
+#   type: uniform_int
+#   lower: 1
+#   upper: 4
 - name: gamma
   default_value: 'scale'
   type: categorical
