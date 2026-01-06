@@ -52,7 +52,8 @@ class AutoGluon(AutoModel):
                 if isinstance(model_hp[hp_name], list):
                     old_hps = model_hp[hp_name][:]
                     for hp in old_hps:
-                        hp["n_jobs"] = self.cpu_count
+                        if isinstance(hp, dict):
+                            hp["n_jobs"] = self.cpu_count
                     model_hp[hp_name] = old_hps
                 elif isinstance(model_hp[hp_name], dict):
                     model_hp[hp_name]["n_jobs"] = self.cpu_count
@@ -61,7 +62,8 @@ class AutoGluon(AutoModel):
                 if isinstance(model_hp[hp_name], list):
                     old_hps = model_hp[hp_name][:]
                     for hp in old_hps:
-                        hp["thread_count"] = self.cpu_count
+                        if isinstance(hp, dict):
+                            hp["thread_count"] = self.cpu_count
                     model_hp[hp_name] = old_hps
                 elif isinstance(model_hp[hp_name], dict):
                     model_hp[hp_name]["thread_count"] = self.cpu_count
