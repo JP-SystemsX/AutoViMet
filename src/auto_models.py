@@ -47,6 +47,26 @@ class AutoGluon(AutoModel):
                     hp["ag_args_ensemble"] = {}
                 hp["ag_args_ensemble"]["use_child_oof"] = False
             model_hp[hp_name] = old_hps
+        for hp_name in ['RF', 'XT', 'KNN', 'NN_TORCH', 'GBM', 'XGB', 'FASTAI']:
+            if hp_name in model_hp:
+                if isinstance(model_hp[hp_name], list):
+                    old_hps = model_hp[hp_name][:]
+                    for hp in old_hps:
+                        hp["n_jobs"] = self.cpu_count
+                    model_hp[hp_name] = old_hps
+                elif isinstance(model_hp[hp_name], dict):
+                    model_hp[hp_name]["n_jobs"] = self.cpu_count
+        for hp_name in ["CAT"]:
+            if hp_name in model_hp:
+                if isinstance(model_hp[hp_name], list):
+                    old_hps = model_hp[hp_name][:]
+                    for hp in old_hps:
+                        hp["thread_count"] = self.cpu_count
+                    model_hp[hp_name] = old_hps
+                elif isinstance(model_hp[hp_name], dict):
+                    model_hp[hp_name]["thread_count"] = self.cpu_count
+
+
         self.fit_kwargs["hyperparameters"] = model_hp
         os.environ["OMP_NUM_THREADS"] = str(self.cpu_count)
         os.environ["MKL_NUM_THREADS"] = str(self.cpu_count)
