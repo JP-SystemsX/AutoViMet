@@ -42,12 +42,16 @@ class AutoGluon(AutoModel):
             if hp_name not in model_hp:
                 continue
             # Set use_child_off of the remaining models to false
-            old_hps = model_hp[hp_name][:]
+            if isinstance(model_hp, list):
+                old_hps = model_hp[hp_name][:]
+            else:
+                old_hps = [model_hp[hp_name]]
             for hp in old_hps:  # For every config in the search-space
-                if "ag_args_ensemble" not in hp:
-                    hp["ag_args_ensemble"] = {}
-                hp["ag_args_ensemble"]["use_child_oof"] = False
-                hp["ag_args_ensemble"]["fold_fitting_strategy"] = "sequential_local" # SequentialLocalFoldFittingStrategy
+                if isinstance(hp, dict):
+                    if "ag_args_ensemble" not in hp:
+                        hp["ag_args_ensemble"] = {}
+                    hp["ag_args_ensemble"]["use_child_oof"] = False
+                    hp["ag_args_ensemble"]["fold_fitting_strategy"] = "sequential_local" # SequentialLocalFoldFittingStrategy
             model_hp[hp_name] = old_hps
 
         
