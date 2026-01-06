@@ -3,6 +3,7 @@ from autogluon.tabular import TabularPredictor, TabularDataset
 from models import BaseModel
 from autogluon.tabular.configs.presets_configs import tabular_presets_dict
 from autogluon.tabular.configs.hyperparameter_configs import get_hyperparameter_config
+from autogluon.core.models.ensemble.fold_fitting_strategy import SequentialLocalFoldFittingStrategy
 
 
 class AutoModel(BaseModel):
@@ -36,7 +37,7 @@ class AutoGluon(AutoModel):
         hp_conf_name = preset_hp.get("hyperparameters", "default")
         model_hp: dict = get_hyperparameter_config(hp_conf_name)
         # Adjust HP to work with GloFos HPC (a bug took more cpus than allocated)
-        for hp_name in ["XT", "RF"]:
+        for hp_name in ['RF', 'XT', 'KNN', 'NN_TORCH', 'GBM', 'XGB', 'FASTAI']:
             # If the model isn't included in the preset ignore it
             if hp_name not in model_hp:
                 continue
@@ -46,34 +47,9 @@ class AutoGluon(AutoModel):
                 if "ag_args_ensemble" not in hp:
                     hp["ag_args_ensemble"] = {}
                 hp["ag_args_ensemble"]["use_child_oof"] = False
+                hp["ag_args_ensemble"]["fold_fitting_strategy"] = "sequential_local" # SequentialLocalFoldFittingStrategy
             model_hp[hp_name] = old_hps
-        for hp_name in ['RF', 'XT', 'KNN', 'NN_TORCH', 'GBM', 'XGB', 'FASTAI']:
-            if hp_name in model_hp:
-                if isinstance(model_hp[hp_name], list):
-                    old_hps = model_hp[hp_name][:]
-                    for hp in old_hps:
-                        if isinstance(hp, dict):
-                            hp["n_jobs"] = self.cpu_count
-                    model_hp[hp_name] = old_hps
-                elif isinstance(model_hp[hp_name], dict):
-                    model_hp[hp_name]["n_jobs"] = self.cpu_count
-        for hp_name in ["CAT"]:
-            if hp_name in model_hp:
-                if isinstance(model_hp[hp_name], list):
-                    old_hps = model_hp[hp_name][:]
-                    for hp in old_hps:
-                        if isinstance(hp, dict):
-                            hp["thread_count"] = self.cpu_count
-                    model_hp[hp_name] = old_hps
-                elif isinstance(model_hp[hp_name], dict):
-                    model_hp[hp_name]["thread_count"] = self.cpu_count
 
-
-        self.fit_kwargs["hyperparameters"] = model_hp
-        os.environ["OMP_NUM_THREADS"] = str(self.cpu_count)
-        os.environ["MKL_NUM_THREADS"] = str(self.cpu_count)
-        os.environ["NUMEXPR_NUM_THREADS"] = str(self.cpu_count)
-        os.environ["OPENBLAS_NUM_THREADS"] = str(self.cpu_count)
         
         self.model.fit(df, num_cpus=self.cpu_count, num_gpus=0, ds_args={'enable_ray_logging': False}, **self.fit_kwargs)
 
