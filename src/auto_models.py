@@ -30,32 +30,16 @@ class AutoGluon(AutoModel):
     def train(self, X, y):
         X["label"] = y
         df = TabularDataset(X)
-
-        # For Bug with CPU count on GloFo Cluster which makes num_cpus ineffective
-        preset = self.fit_kwargs["presets"]
-        preset_hp = tabular_presets_dict[preset]
-        hp_conf_name = preset_hp.get("hyperparameters", "default")
-        model_hp: dict = get_hyperparameter_config(hp_conf_name)
-        # Adjust HP to work with GloFos HPC (a bug took more cpus than allocated)
-        for hp_name in ['RF', 'XT', 'KNN', 'NN_TORCH', 'GBM', 'XGB', 'FASTAI']:
-            # If the model isn't included in the preset ignore it
-            if hp_name not in model_hp:
-                continue
-            # Set use_child_off of the remaining models to false
-            if isinstance(model_hp, list):
-                old_hps = model_hp[hp_name][:]
-            else:
-                old_hps = [model_hp[hp_name]]
-            for hp in old_hps:  # For every config in the search-space
-                if isinstance(hp, dict):
-                    if "ag_args_ensemble" not in hp:
-                        hp["ag_args_ensemble"] = {}
-                    hp["ag_args_ensemble"]["use_child_oof"] = False
-                    hp["ag_args_ensemble"]["fold_fitting_strategy"] = "sequential_local" # SequentialLocalFoldFittingStrategy
-            model_hp[hp_name] = old_hps
-
-        
-        self.model.fit(df, num_cpus=self.cpu_count, num_gpus=0, ds_args={'enable_ray_logging': False}, **self.fit_kwargs)
+   
+        self.model.fit(
+            df, 
+            num_cpus=self.cpu_count, 
+            num_gpus=0, 
+            ds_args={'enable_ray_logging': False},
+            ag_args_fit={
+                "num_cpus": self.cpu_count,
+            }
+            **self.fit_kwargs)
 
     def predict(self, X):
         df = TabularDataset(X)

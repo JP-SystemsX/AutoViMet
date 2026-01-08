@@ -8,7 +8,7 @@ from tabulate import tabulate
 from pathlib import Path
 
 ctr_path = "../results.db"
-vimet_path = "../results.db" #TODO
+vimet_path = "../results_vimet.db" 
 font_size = 14
 font_size_large = 16
 
