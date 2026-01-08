@@ -41,6 +41,7 @@ class AutoGluon(AutoModel):
             }
             **self.fit_kwargs)
 
+
     def predict(self, X):
         df = TabularDataset(X)
         return self.model.predict(df)
