@@ -54,6 +54,7 @@ def main(
     search_ids = []
     i = 0
     experiment_id = str(uuid.uuid4()) 
+    any_succeded = False # Did anymodel get trained successfully?
     for X_train, y_train, X_test, y_test in data_loader:
         if i >= max_splits: # limit number of evals to max 10 for feasability reasons
             break
@@ -83,6 +84,7 @@ def main(
                     model_name=model_name,
                     preferences=preferences,
                 )
+                trained = True
             case "DEHB":
                 best_config, search_id = dehb_search(
                     X_train=X_train,
@@ -157,6 +159,7 @@ def main(
             results["prediction_time"].append(prediction_duration)
             for metric_name, metric in metric_collection.items():
                 results[metric_name].append(metric(y_test, prediction))
+            any_succeded = True
         except Exception as e:
             print(f"Prediction failed with error: {e}. Filling with Nones.")
             results["prediction_time"].append(None)
@@ -166,6 +169,9 @@ def main(
         results["test_samples"].append(len(X_test))
         best_configs.append(best_config)
         search_ids.append(search_id)
+    if not any_succeded:
+        print("No model was trained successfully on any split. Aborting result storage.")
+        return
     # Commit Raw Results to DB
     store_complex_dict(
         {
