@@ -8,7 +8,8 @@ from utils import (
     hebo_search,
     dehb_search,
     get_preprocessor,
-    already_finished
+    already_finished,
+    setup_ray
     )
 import models
 import metrics
@@ -18,7 +19,6 @@ import time
 from pathlib import Path
 import os
 import uuid
-
 
 app = typer.Typer(pretty_exceptions_enable=False)
 
@@ -46,6 +46,9 @@ def main(
     if already_finished(data_id=data_id, search_space_hash=search_space_hash, data_config_hash=data_config_hash, search_algo=search_algo):
         print("Already Done!")
         return
+    
+    if search_algo == "automl":
+        setup_ray()
 
     # Evaluate best Model (Time Series Cross Validation)
     data_loader = load_data(data_config_adr, id=data_id) 

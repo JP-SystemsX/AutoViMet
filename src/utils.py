@@ -836,3 +836,30 @@ def get_preprocessor(config: dict):
 
 
     return feature_generator
+
+
+def setup_ray(memory_limit: int = 16, num_cpus: int = 2, num_gpus: int = 0):
+    '''
+    AutoGluon struggles on HPC and thinks it has more CPUs (all on the node) than were requested.
+    This makes AutoGluon very slow.
+    This function is the proposed workaround (https://github.com/autogluon/autogluon/issues/5180#issuecomment-3108609717) to limit autogluon's main culprit Ray.
+    '''
+    print("Setting up Ray for SLURM job in a shared resources environment.")
+    import logging
+    import tempfile
+
+    import ray
+
+    ray_dir = tempfile.mkdtemp() + "/ray"
+    ray_mem_in_b = int(int(memory_limit) * (1024.0**3))
+    ray.init(
+        address="local",
+        _memory=ray_mem_in_b,
+        object_store_memory=int(ray_mem_in_b * 0.3),
+        _temp_dir=ray_dir,
+        include_dashboard=False,
+        logging_level=logging.INFO,
+        log_to_driver=True,
+        num_gpus=num_gpus,
+        num_cpus=num_cpus,
+    )
