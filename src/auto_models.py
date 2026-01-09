@@ -38,7 +38,7 @@ class AutoGluon(AutoModel):
             ds_args={'enable_ray_logging': False},
             ag_args_fit={
                 "num_cpus": self.cpu_count,
-            }
+            },
             **self.fit_kwargs)
 
 
