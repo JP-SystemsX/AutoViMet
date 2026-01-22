@@ -174,6 +174,8 @@ def already_finished(
     search_space_hash: str,
     data_config_hash: str,
     search_algo: str,
+    search_space_name: str, # Basically the model name but more likely to be unique
+    model_name: str
 ):
     
     conn = sqlite3.connect("results.db")
@@ -182,9 +184,9 @@ def already_finished(
     try: 
         cur.execute("""
             SELECT 1 FROM results
-            WHERE data_id = ? AND search_space_hash = ? AND data_config_hash = ? AND search_algo = ?
+            WHERE data_id = ? AND search_space_hash = ? AND data_config_hash = ? AND search_algo = ? AND search_space_name = ? AND model_name = ?
             LIMIT 1
-        """, (data_id, search_space_hash, data_config_hash, search_algo))
+        """, (data_id, search_space_hash, data_config_hash, search_algo, search_space_name, model_name))
     except:
         return False
 
@@ -644,7 +646,7 @@ def hebo_search(
                     preferences=preferences,
                     experiment_id=experiment_id
                 )
-                fittnesses.append(inf if np.isnan(results["fitness"]) else results["fitness"])
+                fittnesses.append(inf if not np.isfinite(results["fitness"]) else float(results["fitness"]))
             except Exception as e:
                 warn(f"Config {config} failed, due to: {e}")
                 fittnesses.append(inf)
@@ -838,7 +840,7 @@ def get_preprocessor(config: dict):
     return feature_generator
 
 
-def setup_ray(memory_limit: int = 16, num_cpus: int = 2, num_gpus: int = 0):
+def setup_ray(memory_limit: int = 16, num_cpus: int = 4, num_gpus: int = 0):
     '''
     AutoGluon struggles on HPC and thinks it has more CPUs (all on the node) than were requested.
     This makes AutoGluon very slow.

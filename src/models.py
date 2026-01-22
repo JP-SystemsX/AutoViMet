@@ -138,9 +138,11 @@ class LightGBM(BaseModel):
         self.model = LGBMRegressor(**kwargs, n_jobs=2)
     
     def train(self, X, y):
+        X = X.rename({col: str(i) for i, col in enumerate(X.columns)}, axis=1) # LightGBM does not accept special characters in feature names
         self.model.fit(X=X, y=y)
     
     def predict(self, X):
+        X = X.rename({col: str(i) for i, col in enumerate(X.columns)}, axis=1) # LightGBM does not accept special characters in feature names
         return self.model.predict(X)
     
 class CatBoost(BaseModel):

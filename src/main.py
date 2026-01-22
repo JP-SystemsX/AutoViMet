@@ -43,7 +43,7 @@ def main(
     data_config_hash = archive_config("results.db", config_path=data_config_adr, table_name="data_configs")
 
     # Check if result already exists --> If so abord
-    if already_finished(data_id=data_id, search_space_hash=search_space_hash, data_config_hash=data_config_hash, search_algo=search_algo):
+    if already_finished(data_id=data_id, search_space_hash=search_space_hash, data_config_hash=data_config_hash, search_algo=search_algo, search_space_name=Path(search_space_adr).stem, model_name=model_name):
         print("Already Done!")
         return
     
