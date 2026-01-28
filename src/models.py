@@ -326,7 +326,28 @@ class Dummy(BaseModel):
     def predict(self, X):
         return self.model.predict(X)
     
+class MeanModel(BaseModel):
+    def __init__(self, **kwargs):
+        from sklearn.dummy import DummyRegressor
+        self.model = DummyRegressor(strategy="mean", **kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
 
+class MedianModel(BaseModel):
+    def __init__(self, **kwargs):
+        from sklearn.dummy import DummyRegressor
+        self.model = DummyRegressor(strategy="median", **kwargs)
+    
+    def train(self, X, y):
+        self.model.fit(X, y)
+    
+    def predict(self, X):
+        return self.model.predict(X)
+    
 class PassiveAggressive(BaseModel):
     def __init__(self, **kwargs):
         self.model = linear_model.PassiveAggressiveRegressor(**kwargs)

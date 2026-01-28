@@ -42,6 +42,11 @@ from autogluon.features.generators import PipelineFeatureGenerator, FillNaFeatur
 
 def get_configspace(path: str | Path) -> ConfigSpace.ConfigurationSpace:
     """Load a ConfigSpace from a given file path."""
+    
+    with open(path) as f:
+        cfg = yaml.safe_load(f)
+    if "empty" in cfg and cfg["empty"]:
+        return ConfigSpace.ConfigurationSpace()
     cs = ConfigSpace.ConfigurationSpace.from_yaml(path)
 
     # Preprocessing Search Space
@@ -184,7 +189,7 @@ def already_finished(
     try: 
         cur.execute("""
             SELECT 1 FROM results
-            WHERE data_id = ? AND search_space_hash = ? AND data_config_hash = ? AND search_algo = ? AND search_space_name = ? AND model_name = ?
+            WHERE data_id = ? AND search_space_hash = ? AND data_config_hash = ? AND search_algo = ? AND search_space_name = ? AND model = ?
             LIMIT 1
         """, (data_id, search_space_hash, data_config_hash, search_algo, search_space_name, model_name))
     except:
@@ -614,11 +619,13 @@ def hebo_search(
 
     # Optimize Model
     search_space_hash = archive_config("results.db", config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name}) # Regenerate
+    search_id = str(uuid.uuid4())  
     cs = get_configspace(search_space_adr)
+    if len(cs) == 0: # Abort empty search
+        return {}, search_id
     space = to_design_space(cs)
     opt   = HEBO(space)
-
-    search_id = str(uuid.uuid4())               
+             
     print(f"Evaluating {n_trials} configurations for model {model_name} on data config {data_config_hash}.")
     step_size = 32
     start_time = time.time()
