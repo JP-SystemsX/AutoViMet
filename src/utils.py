@@ -99,7 +99,7 @@ def get_dataset(data_id: int, id: int):
 
 
 
-def load_data(data_config_adr: str, id: int = None):
+def load_data(data_config_adr: str, id: int = None, db_path: str = "results.db"):
     """Load data based on the provided configuration address."""
     with open(data_config_adr, 'r') as f:
         data_config = yaml.safe_load(f)
@@ -120,7 +120,7 @@ def load_data(data_config_adr: str, id: int = None):
             meta_data["num_features"] = X.shape[1]
             meta_data["num_samples"] = X.shape[0]
             create_sqlite_table_from_dict(
-                database_path="results.db",
+                database_path=db_path,
                 table_name="datasets",
                 data_dict=make_dict_storable(meta_data),
                 primary_keys=["hash_key", "ID"]
@@ -145,7 +145,7 @@ def load_data(data_config_adr: str, id: int = None):
             meta_data["num_features"] = df.shape[1] - 1 # Exclude Target Column
             meta_data["num_samples"] = df.shape[0]
             create_sqlite_table_from_dict(
-                database_path="results.db",
+                database_path=db_path,
                 table_name="datasets",
                 data_dict=make_dict_storable(meta_data),
                 primary_keys=["hash_key", "ID"]
@@ -180,10 +180,11 @@ def already_finished(
     data_config_hash: str,
     search_algo: str,
     search_space_name: str, # Basically the model name but more likely to be unique
-    model_name: str
+    model_name: str,
+    db_path: str = "results.db"
 ):
     
-    conn = sqlite3.connect("results.db")
+    conn = sqlite3.connect(db_path)
     cur = conn.cursor()
 
     try: 
@@ -501,86 +502,6 @@ def train(
     }
 
 
-def dehb_search(
-        X_train: pd.DataFrame,
-        y_train: pd.Series,
-        search_space_adr: str, 
-        data_config_hash: str, 
-        metric_collection: dict,
-        model_name: str, 
-        n_trials: int, 
-        preferences: dict,
-        data_id: int = None,
-        fold: int = 0,
-        n_workers=4, #TODO send through
-        mode = "DEHB", #or 'DE'
-        experiment_id = "",
-        ):
-    from dehb import DEHB, DE
-    assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
-    # Split Data into Train and Validation
-    validation_split = max(len(y_train) // 10, 2) # 2 for R2
-    X_val_, y_val_ = X_train[-validation_split:], y_train[-validation_split:]
-    X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
-
-    # Optimize Model
-    search_space_hash = archive_config("results.db", config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name}) # Regenerate
-    cs = get_configspace(search_space_adr)
-    search_id = str(uuid.uuid4())               
-    print(f"Evaluating {n_trials} configurations for model {model_name} on data config {data_config_hash}.")
-
-    if mode == "DEHB":
-        optimization_algo = DEHB 
-    elif mode == "DE":
-        optimization_algo = DE
-    else:
-        raise NotImplementedError(f"Optimization Algo {mode} does not exist") 
-
-    optimizer = optimization_algo(
-        f=partial(
-            train,
-            X_train_=X_train_,
-            y_train_=y_train_,
-            X_val_=X_val_,
-            y_val_=y_val_,
-            metric_collection=metric_collection,
-            model_name=model_name,
-            search_id=search_id,
-            search_space_hash=search_space_hash,
-            data_config_hash=data_config_hash,
-            data_id=data_id,
-            fold=fold,
-            preferences=preferences,
-            experiment_id=experiment_id
-        ),
-        cs=cs, 
-        dimensions=len(list(cs.values())), 
-        min_fidelity=0.005, # Exact number is irrelevant just used to compute how many steps fit between lowest and highest fidelity
-        max_fidelity=1,
-        eta=4.64158883361, # Three steps from 1% to 100%
-        n_workers=n_workers,
-        mutation_factor=0.5,
-        crossover_prob=0.5,
-        )
-    if mode == "DEHB":
-        trajectory, runtime, history = optimizer.run(
-            fevals=n_trials,
-            seed=123,
-        )
-    elif mode == "DE":
-        trajectory, runtime, history = optimizer.run(
-            generations=max((n_trials // optimizer.pop_size)-1, 1), 
-            fidelity=1.0,
-        )
-
-    best_config = optimizer.vector_to_configspace(optimizer.inc_config)
-    best_config = dict(best_config)
-    print("Best Config found:", best_config)    
-
-
-    return best_config, search_id
-
-
 def hebo_search(
         X_train: pd.DataFrame,
         y_train: pd.Series,
@@ -593,7 +514,8 @@ def hebo_search(
         data_id: int = None,
         fold: int = 0,
         max_walltime: int = 7200, # Abort search after 2h
-        experiment_id = ""
+        experiment_id = "",
+        db_path: str = "results.db"
         ):
     from hebo.design_space.design_space import DesignSpace
     from hebo.optimizers.hebo import HEBO
@@ -618,7 +540,7 @@ def hebo_search(
     X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
 
     # Optimize Model
-    search_space_hash = archive_config("results.db", config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name}) # Regenerate
+    search_space_hash = archive_config(db_path, config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name}) # Regenerate
     search_id = str(uuid.uuid4())  
     cs = get_configspace(search_space_adr)
     if len(cs) == 0: # Abort empty search
@@ -695,7 +617,8 @@ def random_search(
         data_id: int = None,
         fold: int = 0,
         max_walltime: int = 7200, # Abort search after 2h
-        experiment_id=""
+        experiment_id="",
+        db_path: str = "results.db"
         ):
     assert len(X_train) == len(y_train), "X_train and y_train must have the same length."
     # Split Data into Train and Validation
@@ -704,7 +627,7 @@ def random_search(
     X_train_, y_train_ = X_train[:-validation_split], y_train[:-validation_split]
 
     # Optimize Model
-    search_space_hash = archive_config("results.db", config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name}) # Regenerate
+    search_space_hash = archive_config(db_path, config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name}) # Regenerate
     cs = get_configspace(search_space_adr)
     configs = [cs.get_default_configuration()] + cs.sample_configuration(n_trials-1) 
     search_id = str(uuid.uuid4())               
@@ -735,7 +658,7 @@ def random_search(
             warn(f"Config {config} failed, due to: {e}")
 
     # Load Best Config
-    conn = sqlite3.connect("results.db")
+    conn = sqlite3.connect(db_path)
     results = pd.read_sql(
         "SELECT * FROM trials where search_space_hash = ? and search_id = ? and data_config_hash = ? and data_id = ?", 
         conn, 

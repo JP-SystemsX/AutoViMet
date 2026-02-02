@@ -6,7 +6,7 @@ typer
 typer-config
 m5py
 cubist
-dehb
+# dehb
 hebo==0.3.6
 pymoo #==0.5.0
 numpy # in case of  No module named 'numpy._core' --> Delete OpenML Cache but their cache not our own custom

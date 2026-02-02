@@ -6,7 +6,6 @@ from utils import (
     random_search,
     automl_search,
     hebo_search,
-    dehb_search,
     get_preprocessor,
     already_finished,
     setup_ray
@@ -32,6 +31,7 @@ def main(
         data_id: int = None,
         search_algo: str = "random", # "automl"
         max_splits: int = 10,
+        db_path: str = "results.db"
 ):
     with open(eval_config_adr, 'r') as f:
         eval_config = yaml.safe_load(f)
@@ -39,11 +39,11 @@ def main(
     metric_collection = {metric: getattr(metrics, metric) for metric in eval_config["metrics"]}
     preferences: dict = eval_config["preferences"]
 
-    search_space_hash = archive_config("results.db", config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name})
-    data_config_hash = archive_config("results.db", config_path=data_config_adr, table_name="data_configs")
+    search_space_hash = archive_config(db_path, config_path=search_space_adr, table_name="search_spaces", extras={"model": model_name})
+    data_config_hash = archive_config(db_path, config_path=data_config_adr, table_name="data_configs")
 
     # Check if result already exists --> If so abord
-    if already_finished(data_id=data_id, search_space_hash=search_space_hash, data_config_hash=data_config_hash, search_algo=search_algo, search_space_name=Path(search_space_adr).stem, model_name=model_name):
+    if already_finished(data_id=data_id, search_space_hash=search_space_hash, data_config_hash=data_config_hash, search_algo=search_algo, search_space_name=Path(search_space_adr).stem, model_name=model_name, db_path=db_path):
         print("Already Done!")
         return
     
@@ -51,7 +51,7 @@ def main(
         setup_ray()
 
     # Evaluate best Model (Time Series Cross Validation)
-    data_loader = load_data(data_config_adr, id=data_id) 
+    data_loader = load_data(data_config_adr, id=data_id, db_path=db_path) 
     results = defaultdict(list)
     best_configs = []
     search_ids = []
@@ -77,7 +77,8 @@ def main(
                     preferences=preferences,
                     data_id=data_id,
                     fold=i,
-                    experiment_id=experiment_id
+                    experiment_id=experiment_id,
+                    db_path=db_path
                 )
             case "automl":
                 model, search_id, best_config= automl_search(
@@ -88,38 +89,6 @@ def main(
                     preferences=preferences,
                 )
                 trained = True
-            case "DEHB":
-                best_config, search_id = dehb_search(
-                    X_train=X_train,
-                    y_train=y_train,
-                    search_space_adr=search_space_adr,
-                    data_config_hash=data_config_hash,
-                    metric_collection=metric_collection,
-                    model_name=model_name,
-                    n_trials=n_trials,
-                    preferences=preferences,
-                    data_id=data_id,
-                    fold=i,
-                    n_workers=4, #TODO make accesible via CLI
-                    mode="DEHB",
-                    experiment_id=experiment_id
-                )
-            case "DE":
-                best_config, search_id = dehb_search(
-                    X_train=X_train,
-                    y_train=y_train,
-                    search_space_adr=search_space_adr,
-                    data_config_hash=data_config_hash,
-                    metric_collection=metric_collection,
-                    model_name=model_name,
-                    n_trials=n_trials,
-                    preferences=preferences,
-                    data_id=data_id,
-                    fold=i,
-                    n_workers=4, #TODO make accesible via CLI
-                    mode="DE",
-                    experiment_id=experiment_id
-                )
             case "HEBO":
                 best_config, search_id = hebo_search(
                     X_train=X_train,
@@ -132,7 +101,8 @@ def main(
                     preferences=preferences,
                     data_id=data_id,
                     fold=i,
-                    experiment_id=experiment_id
+                    experiment_id=experiment_id,
+                    db_path=db_path
                 )
             case _:
                 raise NotImplementedError(f"Search Algorithm {search_algo} not implemented.")
@@ -190,7 +160,7 @@ def main(
             "timestamp": time.time(),
             **results
         }, 
-        database_path="results.db", 
+        database_path=db_path, 
         table_name="results"
     )
 
