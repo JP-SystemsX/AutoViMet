@@ -33,6 +33,21 @@
                 "--data-id", "0",
                 "--search-algo", "HEBO"
             ]
+        },
+        {
+            "name": "ViMet",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/main.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--model-name", "MedianModel",
+                "--eval-config-adr", "configs/eval_configs/standard_eval.yml",
+                "--data-config-adr", "configs/data_configs/glofo_bench.yml",
+                "--search-space-adr", "configs/search_spaces/MedianModel.yml",
+                "--data-id", "101",
+                "--search-algo", "HEBO"
+            ]
         }
     ]
 }

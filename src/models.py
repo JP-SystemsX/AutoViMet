@@ -410,7 +410,7 @@ class SGD(BaseModel):
     def predict(self, X):
         return self.model.predict(X)
 
-class Bagging(BaseModel):
+class Bagging(BaseModel): # TODO Split into 4 Models (Pasting, Bagging, Random Subspaces, Randomn Patches) see docu
     def __init__(self, estimator, **kwargs):
         estimator = getattr(sys.modules[__name__], estimator)()
         self.model = BaggingRegressor(estimator=estimator, n_jobs=2, **kwargs)

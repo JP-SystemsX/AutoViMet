@@ -7,7 +7,7 @@ import seaborn as sns
 from tabulate import tabulate
 from pathlib import Path
 
-ctr_path = "../results.db"
+ctr_path = "../results_ctr.db"
 vimet_path = "../results_vimet.db" 
 font_size = 14
 font_size_large = 16
@@ -19,7 +19,7 @@ def convert_listlike_cols(df: pd.DataFrame) -> pd.DataFrame:
         sample = df[col].dropna().astype(str).head(20)
         if sample.map(lambda x: x.startswith("[") and x.endswith("]")).all():
             print(col)
-            df[col] = df[col].map(ast.literal_eval)
+            df[col] = df[col].map(lambda x: ast.literal_eval(x.replace("-inf", "None").replace("inf", "None")))
             df[col+"_corrected"] = df[col].apply(lambda l: [(0 if x is None or x < 0 else x) for x in l])
     return df
 
