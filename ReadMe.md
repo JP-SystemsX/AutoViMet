@@ -5,41 +5,44 @@ This repository is the official implementation of the benchmark conducted in [Re
 
 ## Requirements
 
-To install requirements:
+Clone the Project:
+```clone
+git clone ...
+cd AutoBaseline
+```
+
+We prepared a shell script to set up a virtual environment, you can run it with:
 
 ```setup
-pip install -r requirements.txt
+./hpc/venv_setup.sh
 ```
 
->📋  Describe how to set up the environment, e.g. pip/conda/docker commands, download datasets, etc...
+Note: You might need to adjust the script to confirm with your available modules.
 
-## Training
 
-To train the model(s) in the paper, run this command:
+## Benchmark
+
+To perform the benchmark, run the following:
 
 ```train
-python train.py --input-data <path_to_data> --alpha 10 --beta 20
+sbatch ./hpc/OpenML-CTR23-HEBO.sh
+```
+Note: You might need to adjust the configuration of the slurm script
+
+This creates a sqlite database containing the results of the benchmark. 
+Further, it also creates several smaller databases that cache the results of individual trials to avoid write conflicts on the main database due to massive parallelism.
+To add those temporary databases to the main database, run:
+
+```merge
+sbatch ./hpc/cache2db.sh
 ```
 
->📋  Describe how to train the models, with example commands on how to train the models in your paper, including the full training procedure and appropriate hyperparameters.
 
-## Evaluation
 
-To evaluate my model on ImageNet, run:
+## Analysis and Visualization
 
-```eval
-python eval.py --model-file mymodel.pth --benchmark imagenet
-```
+To analyze the results of the benchmark, we provide a jupyter notebook at `analysis\performance_comparison.ipynb` that contains the code to analyze the results and produce the figures in the paper.
 
->📋  Describe how to evaluate the trained models on benchmarks reported in the paper, give commands that produce the results (section below).
-
-## Pre-trained Models
-
-You can download pretrained models here:
-
-- [My awesome model](https://drive.google.com/mymodel.pth) trained on ImageNet using parameters x,y,z. 
-
->📋  Give a link to where/how the pretrained models can be downloaded and how they were trained (if applicable).  Alternatively you can have an additional column in your results table with a link to the models.
 
 ## Results
 
