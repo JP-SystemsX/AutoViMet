@@ -1,5 +1,0 @@
-fit_kwargs:
-  time_limit: 60  # 1 minutes in seconds
-  presets: "best_quality"
-  
-  
