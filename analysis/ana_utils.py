@@ -6,9 +6,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tabulate import tabulate
 from pathlib import Path
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
+import numpy as np
 
-ctr_path = "../results_ctr.db"
-vimet_path = "../results_vimet.db" 
+ctr_path = "../results.db"
+vimet_path = "../results.db" # TODO Set to different database
 font_size = 14
 font_size_large = 16
 
@@ -60,3 +63,40 @@ def df_to_latex_table(
     pth.parent.mkdir(parents=True, exist_ok=True)
     pth.write_text(latex, encoding="utf-8")
     return latex
+
+
+
+
+def compute_mean(s: pd.Series)-> pd.Series:
+    return s.apply(
+        lambda xs: np.nanmean([x for x in xs]) if None not in xs else np.nan
+    )
+
+_magma = cm.get_cmap("magma")
+
+
+def _magma_rgba(pct: float):
+    normalized = max(0.0, min(1.0, pct / 100.0))
+    return _magma(normalized)
+
+
+def _rgba_to_hex(rgba):
+    return mcolors.to_hex(rgba, keep_alpha=False)[1:].upper()
+
+
+def _relative_luminance(r, g, b):
+    """
+    WCAG relative luminance.
+    Input RGB in [0,1]
+    """
+    def f(c):
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+    r_lin, g_lin, b_lin = f(r), f(g), f(b)
+    return 0.2126 * r_lin + 0.7152 * g_lin + 0.0722 * b_lin
+
+
+def _font_color_from_rgba(rgba):
+    r, g, b, _ = rgba
+    lum = _relative_luminance(r, g, b)
+    return "white" if lum < 0.5 else "black"

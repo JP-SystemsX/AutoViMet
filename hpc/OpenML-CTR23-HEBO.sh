@@ -3,11 +3,10 @@
 #SBATCH --nodes=1
 #SBATCH --mem=160G # Working Memory
 #SBATCH --time=48:00:00  # Should take at most 20h but in rare exceptions might take longer 
-#SBATCH --account=p_llm_timeseries
 #SBATCH --job-name=ctr23
 #SBATCH --output=hpc/logs/ctr23-%j-%a.out  # Output Address 
 #SBATCH --error=hpc/logs/ctr23-%j-%a.err  # Output Address
-#SBATCH --array=0-1189%400 #35 datasets * (28 Single Models + 6 AutoGluon Configs)  
+#SBATCH --array=0-1189%5 #35 datasets * (28 Single Models + 6 AutoGluon Configs)  
 # Load all Modules
 
 # Prepare file list
