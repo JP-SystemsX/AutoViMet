@@ -3,7 +3,6 @@
 #SBATCH --nodes=1
 #SBATCH --mem=160G # Working Memory
 #SBATCH --time=1-00:00:00  # Runtime HH:MM:SS
-#SBATCH --account=p_llm_timeseries
 #SBATCH --job-name=ctr23
 #SBATCH --output=hpc/logs/ctr23-%j-%a.out  # Output Address 
 #SBATCH --error=hpc/logs/ctr23-%j-%a.err  # Output Address
