@@ -4,6 +4,7 @@ from models import BaseModel
 from autogluon.tabular.configs.presets_configs import tabular_presets_dict
 from autogluon.tabular.configs.hyperparameter_configs import get_hyperparameter_config
 from autogluon.core.models.ensemble.fold_fitting_strategy import SequentialLocalFoldFittingStrategy
+import flaml
 
 
 class AutoModel(BaseModel):
@@ -48,3 +49,16 @@ class AutoGluon(AutoModel):
 
     def info(self) -> dict:
         return self.model.info()
+    
+
+class FLAML(AutoModel):
+    def __init__(self, metric, config, search_id, **kwargs):
+        self.fit_kwargs = config.get("fit_kwargs", {})
+        self.model = flaml.AutoML()
+
+    def train(self, X, y):
+        self.model.fit(X, y, **self.fit_kwargs)
+
+
+    def predict(self, X):
+        return self.model.predict(X)

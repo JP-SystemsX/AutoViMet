@@ -1,0 +1,6 @@
+fit_kwargs:
+  time_limit: 7200  # 2 hours in seconds
+  presets: "best_quality"
+  auto_stack: False
+  dynamic_stacking: False
+

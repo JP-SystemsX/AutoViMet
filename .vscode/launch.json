@@ -6,16 +6,17 @@
     "configurations": [
 
         {
-            "name": "Python Debugger: Current File with Arguments",
+            "name": "AutoML Test",
             "type": "debugpy",
             "request": "launch",
             "program": "src/main.py",
             "console": "integratedTerminal",
             "args": [
-                "--model-name", "Lasso",
+                "--model-name", "AutoGluon",
                 "--eval-config-adr", "configs/eval_configs/standard_eval.yml",
                 "--data-config-adr", "configs/data_configs/ctr23.yml",
-                "--search-space-adr", "configs/search_spaces/Lasso.yml",
+                "--search-space-adr", "configs/automl_configs/AutoGluon-NS_2h.yml",
+                "--search-algo", "automl",
                 "--data-id", "0",
             ]
         },

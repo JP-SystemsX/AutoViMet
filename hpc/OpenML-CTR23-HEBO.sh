@@ -28,7 +28,13 @@ if [[ $FILE == configs/search_spaces/* ]]; then
     SEARCH_ALGO="HEBO"
 elif [[ $FILE == configs/automl_configs/* ]]; then
     FOLDER="automl"
-    MODEL_NAME="AutoGluon"
+    if [[ $BASENAME == AutoGluon* ]]; then
+        MODEL_NAME="AutoGluon"
+    elif [[ $BASENAME == FLAML* ]]; then
+        MODEL_NAME="FLAML"
+    else
+        MODEL_NAME="${BASENAME%.*}"
+    fi
     SEARCH_ALGO="automl"
 fi
 

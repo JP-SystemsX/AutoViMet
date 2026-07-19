@@ -1,0 +1,10 @@
+fit_kwargs:
+    time_budget: 7200
+    metric: 'r2'
+    "task": 'regression'
+    n_jobs: 2
+    eval_method: "cv"
+    seed: 42
+    ensemble: False # Default
+
+

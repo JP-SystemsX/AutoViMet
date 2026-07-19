@@ -1,0 +1,22 @@
+[project]
+name = "autobaseline"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.11.7"
+dependencies = [
+    "autogluon>=1.1.1",
+    "configspace>=1.2.2",
+    "cubist>=0.1.4",
+    "flaml[automl]>=2.6.0",
+    "hebo==0.3.6",
+    "m5py>=0.3.3",
+    "numpy>=1.24.4",
+    "openml>=0.15.1",
+    "pyaml>=26.7.0",
+    "pyarrow<21",
+    "pymoo>=0.6.0",
+    "scikit-learn>=1.4.0",
+    "typer>=0.27.0",
+    "typer-config>=1.5.1",
+]
