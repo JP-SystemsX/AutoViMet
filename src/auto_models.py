@@ -5,6 +5,8 @@ from autogluon.tabular.configs.presets_configs import tabular_presets_dict
 from autogluon.tabular.configs.hyperparameter_configs import get_hyperparameter_config
 from autogluon.core.models.ensemble.fold_fitting_strategy import SequentialLocalFoldFittingStrategy
 import flaml
+from lightautoml.automl.presets.tabular_presets import TabularAutoML
+from lightautoml.tasks import Task
 
 
 class AutoModel(BaseModel):
@@ -64,21 +66,23 @@ class FLAML(AutoModel):
         return self.model.predict(X)
 
 
-class AutoSklearn(AutoModel):
+class LightAutoML(AutoModel):
     def __init__(self, metric, config, search_id, **kwargs):
-        import autosklearn.regression
+        self.target = "target"
 
-        self.model = autosklearn.regression.AutoSklearnRegressor(
-            **config.get("init_kwargs", {})
+        self.model = TabularAutoML(
+            task=Task("reg", metric='mse'),
+            **config.get("init_kwargs", {}),
         )
 
     def train(self, X, y):
-        feat_type = [
-            "Categorical" if str(dtype) in ("object", "category", "string") else "Numerical"
-            for dtype in X.dtypes
-        ]
+        train = X.copy()
+        train[self.target] = y
 
-        self.model.fit(X, y, feat_type=feat_type)
+        self.model.fit_predict(
+            train,
+            roles={"target": self.target},
+        )
 
     def predict(self, X):
-        return self.model.predict(X)
+        return self.model.predict(X).data[:, 0]

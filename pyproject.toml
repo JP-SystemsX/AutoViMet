@@ -10,6 +10,7 @@ dependencies = [
     "cubist>=0.1.4",
     "flaml[automl]>=2.6.0",
     "hebo==0.3.6",
+    "lightautoml>=0.2.7",
     "m5py>=0.3.3",
     "numpy>=1.24.4",
     "openml>=0.15.1",
@@ -19,5 +20,4 @@ dependencies = [
     "scikit-learn>=1.4.0",
     "typer>=0.27.0",
     "typer-config>=1.5.1",
-    "auto-sklearn; sys_platform == 'linux'",
 ]

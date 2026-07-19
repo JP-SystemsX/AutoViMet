@@ -1,0 +1,3 @@
+init_kwargs:
+  timeout: 7200  # 2h in seconds
+  cpu_limit: 2
