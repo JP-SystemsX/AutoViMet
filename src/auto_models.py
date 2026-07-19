@@ -62,3 +62,23 @@ class FLAML(AutoModel):
 
     def predict(self, X):
         return self.model.predict(X)
+
+
+class AutoSklearn(AutoModel):
+    def __init__(self, metric, config, search_id, **kwargs):
+        import autosklearn.regression
+
+        self.model = autosklearn.regression.AutoSklearnRegressor(
+            **config.get("init_kwargs", {})
+        )
+
+    def train(self, X, y):
+        feat_type = [
+            "Categorical" if str(dtype) in ("object", "category", "string") else "Numerical"
+            for dtype in X.dtypes
+        ]
+
+        self.model.fit(X, y, feat_type=feat_type)
+
+    def predict(self, X):
+        return self.model.predict(X)

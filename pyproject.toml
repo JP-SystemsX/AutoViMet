@@ -19,4 +19,5 @@ dependencies = [
     "scikit-learn>=1.4.0",
     "typer>=0.27.0",
     "typer-config>=1.5.1",
+    "auto-sklearn; sys_platform == 'linux'",
 ]

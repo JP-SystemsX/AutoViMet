@@ -32,6 +32,8 @@ elif [[ $FILE == configs/automl_configs/* ]]; then
         MODEL_NAME="AutoGluon"
     elif [[ $BASENAME == FLAML* ]]; then
         MODEL_NAME="FLAML"
+    elif [[ $BASENAME == AutoSklearn* ]]; then
+        MODEL_NAME="AutoSklearn"
     else
         MODEL_NAME="${BASENAME%.*}"
     fi
