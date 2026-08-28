@@ -58,14 +58,14 @@ class FLAML(AutoModel):
 
     def __init__(self, metric, config, search_id, **kwargs):
         self.fit_kwargs = config.get("fit_kwargs", {})
-        self.feature_names = None
+        self.feature_map = None
         self.categories = {}
         self.model = flaml.AutoML()
 
     def train(self, X, y):
         X = X.copy()
-        self.feature_names = [str(i) for i in range(X.shape[1])]
-        X.columns = self.feature_names
+        self.feature_map = {col: str(i) for i, col in enumerate(X.columns)}
+        X = X.rename(columns=self.feature_map)
 
         for col in X.select_dtypes(include=["category", "object", "string"]).columns:
             X[col] = X[col].astype(str)
@@ -76,7 +76,7 @@ class FLAML(AutoModel):
 
     def predict(self, X):
         X = X.copy()
-        X.columns = self.feature_names
+        X = X[list(self.feature_map)].rename(columns=self.feature_map)
 
         for col, cats in self.categories.items():
             X[col] = pd.Categorical(X[col].astype(str), categories=cats)
@@ -88,7 +88,7 @@ class LightAutoML(AutoModel):
 
     def __init__(self, metric, config, search_id, **kwargs):
         self.target = "target"
-        self.feature_names = None
+        self.feature_map = None
         self.model = TabularAutoML(
             task=Task("reg", metric="mse"),
             **config.get("init_kwargs", {}),
@@ -96,9 +96,8 @@ class LightAutoML(AutoModel):
 
     def train(self, X, y):
         train = X.copy()
-
-        self.feature_names = [str(i) for i in range(X.shape[1])]
-        train.columns = self.feature_names
+        self.feature_map = {col: str(i) for i, col in enumerate(X.columns)}
+        train = train.rename(columns=self.feature_map)
         train[self.target] = y
 
         self.model.fit_predict(
@@ -108,6 +107,5 @@ class LightAutoML(AutoModel):
 
     def predict(self, X):
         X = X.copy()
-        X.columns = self.feature_names
-
+        X = X[list(self.feature_map)].rename(columns=self.feature_map)
         return self.model.predict(X).data[:, 0]
