@@ -7,7 +7,7 @@ from autogluon.core.models.ensemble.fold_fitting_strategy import SequentialLocal
 import flaml
 from lightautoml.automl.presets.tabular_presets import TabularAutoML
 from lightautoml.tasks import Task
-
+import pandas as pd
 
 class AutoModel(BaseModel):
     def __init__(self, metric, config, search_id,**kwargs):
@@ -53,11 +53,13 @@ class AutoGluon(AutoModel):
         return self.model.info()
     
 
+
 class FLAML(AutoModel):
 
     def __init__(self, metric, config, search_id, **kwargs):
         self.fit_kwargs = config.get("fit_kwargs", {})
         self.feature_names = None
+        self.categories = {}
         self.model = flaml.AutoML()
 
     def train(self, X, y):
@@ -65,11 +67,19 @@ class FLAML(AutoModel):
         self.feature_names = [str(i) for i in range(X.shape[1])]
         X.columns = self.feature_names
 
+        for col in X.select_dtypes(include=["category", "object"]).columns:
+            X[col] = X[col].astype(str)
+            self.categories[col] = X[col].unique().tolist()
+            X[col] = pd.Categorical(X[col], categories=self.categories[col])
+
         self.model.fit(X, y, **self.fit_kwargs)
 
     def predict(self, X):
         X = X.copy()
         X.columns = self.feature_names
+
+        for col, cats in self.categories.items():
+            X[col] = pd.Categorical(X[col].astype(str), categories=cats)
 
         return self.model.predict(X)
 
