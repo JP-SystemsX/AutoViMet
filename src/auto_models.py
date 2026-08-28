@@ -67,7 +67,7 @@ class FLAML(AutoModel):
         self.feature_names = [str(i) for i in range(X.shape[1])]
         X.columns = self.feature_names
 
-        for col in X.select_dtypes(include=["category", "object"]).columns:
+        for col in X.select_dtypes(include=["category", "object", "string"]).columns:
             X[col] = X[col].astype(str)
             self.categories[col] = X[col].unique().tolist()
             X[col] = pd.Categorical(X[col], categories=self.categories[col])
